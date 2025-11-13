@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -485,6 +486,34 @@ async function tryMergeExternal(){
     });
   }catch{}
 }
+// === Kroger backend test wiring ===
+const KROGER_BACKEND = "https://tabella-kroger-backend.vercel.app";
+
+async function dmTestKroger() {
+  const testBody = {
+    storeId: "01400513", // the store you just used in PowerShell
+    items: [
+      { key: "flour", name: "All purpose flour", qty: 2, unit: "cup" },
+      { key: "eggs",  name: "Eggs",              qty: 6, unit: "each" }
+    ]
+  };
+
+  try {
+    const res = await fetch(`${KROGER_BACKEND}/api/prices`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(testBody),
+    });
+
+    const data = await res.json();
+    console.log("Kroger test pricing", data);
+    alert("Kroger test pricing:\n" + JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.error("Kroger test failed", err);
+    alert("Kroger test failed: " + err);
+  }
+}
+// === end Kroger test wiring ===
 
 (async function init(){
   if(!window.SHOW_INTERNAL_HEADER){ const h=document.getElementById("internalHeader"); if(h) h.style.display="none"; }
