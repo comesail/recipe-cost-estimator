@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,7 +31,7 @@
   .sub{color:#333;margin:0 0 10px;font-size:18px;font-weight:300;} .sub strong{font-weight:600;}
   .muted{color:var(--muted);font-size:13px;} .tiny{font-size:12px;}
   label{display:block;font-size:13px;color:#222;margin:0 0 6px;font-weight:300;}
-  input,button{ font:inherit;border-radius:0;border:1px solid var(--line);padding:10px 12px;width:100%;box-sizing:border-box;background:#fff;color:var(--text); }
+  input,button,select{ font:inherit;border-radius:0;border:1px solid var(--line);padding:10px 12px;width:100%;box-sizing:border-box;background:#fff;color:var(--text); }
   input[type="number"]{appearance:textfield;}
   input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{appearance:none;margin:0;}
   .row{display:grid;grid-template-columns:2.5fr 1fr 1.2fr auto;gap:10px;align-items:end;}
@@ -44,7 +43,7 @@
   .right{text-align:right;}
   .results-grid{display:grid; grid-template-columns: 1fr 320px; gap:24px; align-items:start;}
   .results-right{border-left:1px solid var(--line); padding-left:18px;}
-  .pill-btn{ border-radius:999px; padding:10px 16px; border:2px solid var(--blue); background:#fff; color:var(--blue); font-weight:600; cursor:pointer; }
+  .pill-btn{ border-radius:999px; padding:10px 16px; border:2px solid var(--blue); background:#fff; color:var(--blue); font-weight:600; cursor:pointer; width:auto; }
   .pill-btn:hover{filter:brightness(.97);}
   .total{font-size:18px; display:flex; align-items:center; gap:8px;} .amount{font-weight:600;} .badge{border:1px solid var(--line); padding:2px 6px; font-size:11px; color:#1f66c1;}
   .pill{border:1px solid var(--line);padding:10px 12px;} .flash{animation:flash 900ms ease;} @keyframes flash{0%{background:var(--flash);} 100%{background:transparent;}}
@@ -132,6 +131,22 @@
         <div class="tiny muted" style="margin-bottom:6px;"><strong>Optional</strong> — For a more accurate estimate, use my location.</div>
         <button class="pill-btn" id="locBtn" type="button">Use my location</button>
         <div class="muted tiny" id="regionNote" style="margin-top:8px;"></div>
+
+        <!-- New: ZIP + store selection wired to Kroger backend -->
+        <div class="tiny muted" style="margin-top:14px;">Or enter ZIP and choose a nearby store.</div>
+        <div class="controls-inline" style="margin-top:6px;">
+          <input id="zipInput" placeholder="ZIP" style="max-width:120px;">
+          <button class="pill-btn" id="findStoresBtn" type="button" style="padding:8px 12px;font-size:12px;">Find stores</button>
+        </div>
+        <div style="margin-top:8px;">
+          <select id="storeSelect" style="width:100%;max-width:100%;padding:8px 10px;border-radius:999px;border:1px solid var(--line);font-size:13px;">
+            <option value="">No store selected</option>
+          </select>
+        </div>
+        <div class="controls-inline" style="margin-top:6px;">
+          <button class="pill-btn" id="storePricesBtn" type="button" style="padding:8px 12px;font-size:12px;">Use store prices</button>
+        </div>
+        <div class="tiny muted" id="storeError" style="margin-top:6px;"></div>
       </div>
     </div>
   </section>
@@ -234,6 +249,13 @@ const regionBadge = document.getElementById("regionBadge");
 const buyToggle = document.getElementById("buyToggle");
 const buyTotalEl = document.getElementById("buyTotal");
 const leftoversList = document.getElementById("leftoversList");
+
+// New DOM refs for store wiring
+const zipInput = document.getElementById("zipInput");
+const findStoresBtn = document.getElementById("findStoresBtn");
+const storeSelect = document.getElementById("storeSelect");
+const storePricesBtn = document.getElementById("storePricesBtn");
+const storeError = document.getElementById("storeError");
 
 function seedIng(){
   ingList.innerHTML="";
@@ -414,7 +436,19 @@ document.getElementById("addBtn").addEventListener("click", ()=>{
   const baseQty=(typeof q==="object" && q.type==="x") ? resolved.factor : qtyNum*resolved.factor;
   const lineCost=baseQty*pricePerBase;
 
-  rows.push({ key, label:item.label, qtyDisplay:resolved.qtyDisplay || qtyRaw, unitDisplay:resolved.unitDisplay || (UNIT_LABELS[unitRaw]||unitRaw), baseQty, lineCost });
+  const qtyForBackend = qtyNum; // numeric quantity to send to /api/prices
+  const unitForBackend = unitRaw;
+
+  rows.push({
+    key,
+    label:item.label,
+    qtyDisplay:resolved.qtyDisplay || qtyRaw,
+    unitDisplay:resolved.unitDisplay || (UNIT_LABELS[unitRaw]||unitRaw),
+    baseQty,
+    lineCost,
+    qtyForBackend,
+    unitForBackend
+  });
   ingInput.value=""; qtyInput.value=""; unitInput.value="";
   render();
 });
@@ -442,6 +476,7 @@ document.getElementById("locBtn").addEventListener("click", ()=>{
       REGION={name:hit.name, factor:hit.factor};
       regionNote.textContent = `Using ${hit.name} regional average`;
       regionBadge.style.display="inline-block";
+      regionBadge.textContent = "Regional";
       priceNote.textContent = `Prices adjusted using ${hit.name} regional averages.`;
     }else{
       REGION={name:"National", factor:1.00};
@@ -463,7 +498,7 @@ async function tryMergeExternal(){
     const rc = await fetch("./data/ingredients.csv", {cache:"no-store"});
     if(!rc.ok) return;
     const text = await rc.text();
-    const lines = text.split(/\\r?\\n/).filter(Boolean);
+    const lines = text.split(/\r?\n/).filter(Boolean);
     const hdr = lines.shift().split(",").map(s=>s.trim());
     const idx = {key:hdr.indexOf("key"), label:hdr.indexOf("label"), baseUnit:hdr.indexOf("baseUnit"),
                  pricePerBase:hdr.indexOf("pricePerBase"), cupOz:hdr.indexOf("cupOz"),
@@ -486,12 +521,181 @@ async function tryMergeExternal(){
     });
   }catch{}
 }
-// === Kroger backend test wiring ===
+
+// === Kroger backend wiring (front-end only) ===
 const KROGER_BACKEND = "https://tabella-kroger-backend.vercel.app";
 
+function applyStoreMode(labelText){
+  REGION = { name:"Store", factor:1.00 };
+  regionBadge.style.display = "inline-block";
+  regionBadge.textContent = "Store";
+  if(labelText){
+    regionNote.textContent = `Using prices from ${labelText}`;
+  }else{
+    regionNote.textContent = "Using store prices";
+  }
+  priceNote.textContent = "Prices based on your selected store. Actual costs may vary by store and region.";
+  totalRow.classList.remove("flash"); void totalRow.offsetWidth; totalRow.classList.add("flash");
+}
+
+// Call /api/stores when ZIP is chosen
+async function fetchStoresByZip(zip){
+  storeError.textContent = "";
+  if(!zip){
+    storeError.textContent = "Enter a ZIP code first.";
+    return;
+  }
+  storeSelect.innerHTML = '<option value="">Loading stores…</option>';
+  try{
+    const res = await fetch(`${KROGER_BACKEND}/api/stores?zip=${encodeURIComponent(zip)}`);
+    if(!res.ok){
+      throw new Error("Store lookup failed: " + res.status);
+    }
+    const data = await res.json();
+    const stores = Array.isArray(data.stores) ? data.stores : data;
+
+    storeSelect.innerHTML = "";
+    if(!stores || !stores.length){
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "No nearby stores found";
+      storeSelect.appendChild(opt);
+      storeError.textContent = "No nearby stores found for that ZIP.";
+      return;
+    }
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Choose a store";
+    storeSelect.appendChild(placeholder);
+
+    stores.forEach(store => {
+      const opt = document.createElement("option");
+      const id = store.id || store.storeId || store.locationId;
+      opt.value = id;
+      const name = store.name || store.description || "Store";
+      const city = store.city || (store.address && store.address.city) || "";
+      opt.textContent = city ? `${name} (${city})` : name;
+      opt.dataset.label = opt.textContent;
+      storeSelect.appendChild(opt);
+    });
+  }catch(err){
+    console.error(err);
+    storeError.textContent = "Could not load store list. Please try again.";
+    storeSelect.innerHTML = '<option value="">No store selected</option>';
+  }
+}
+
+// Call /api/prices with current ingredient list
+async function fetchStorePrices(){
+  storeError.textContent = "";
+  const storeId = storeSelect.value;
+  if(!storeId){
+    storeError.textContent = "Select a store first.";
+    return;
+  }
+  if(!rows.length){
+    storeError.textContent = "Add at least one ingredient to estimate prices.";
+    return;
+  }
+
+  const items = rows.map(r => ({
+    key: r.key,
+    name: r.label,
+    qty: r.qtyForBackend,
+    unit: r.unitForBackend
+  }));
+
+  try{
+    const res = await fetch(`${KROGER_BACKEND}/api/prices`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ storeId, items })
+    });
+    if(!res.ok){
+      throw new Error("Price lookup failed: " + res.status);
+    }
+    const data = await res.json();
+    const priceItems = Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []);
+
+    // Update line costs from backend
+    priceItems.forEach(pi => {
+      const key = pi.key || (pi.ingredient && pi.ingredient.key);
+      const name = (pi.name || (pi.ingredient && pi.ingredient.name) || "").toLowerCase();
+      let target = null;
+      if(key){
+        target = rows.find(r => r.key === key);
+      }
+      if(!target && name){
+        target = rows.find(r => r.label.toLowerCase() === name);
+      }
+      const lineTotal =
+        typeof pi.lineTotal === "number" ? pi.lineTotal :
+        typeof pi.totalPrice === "number" ? pi.totalPrice :
+        typeof pi.total === "number" ? pi.total :
+        typeof pi.price === "number" ? pi.price :
+        null;
+      if(target != null && lineTotal != null){
+        target.lineCost = lineTotal;
+      }
+    });
+
+    // Optional totals block from backend
+    if(data.totals && typeof data.totals.recipeTotal === "number"){
+      const t = data.totals.recipeTotal;
+      totalCell.textContent = fmt(t);
+      totalVal.textContent = fmt(t);
+      const s = Number(servingsInput.value);
+      if(isFinite(s) && s>0){
+        perServingEl.style.display="";
+        perServingEl.textContent = `Per-serving: ${fmt(t/s)}`;
+      }else{
+        perServingEl.style.display="none";
+      }
+      if(buyToggle.checked){
+        const scratch = typeof data.totals.scratchTotal === "number" ? data.totals.scratchTotal : t;
+        buyTotalEl.style.display="";
+        buyTotalEl.textContent = `If buying from scratch: ${fmt(scratch)}`;
+      }
+    }else{
+      render();
+    }
+
+    const selectedOpt = storeSelect.options[storeSelect.selectedIndex];
+    const labelText = selectedOpt ? (selectedOpt.dataset.label || selectedOpt.textContent) : "";
+    applyStoreMode(labelText);
+  }catch(err){
+    console.error(err);
+    storeError.textContent = "Could not load store prices. Using averages instead.";
+    render();
+  }
+}
+
+// ZIP and store events
+findStoresBtn.addEventListener("click", () => {
+  const zip = (zipInput.value || "").trim();
+  fetchStoresByZip(zip);
+});
+
+zipInput.addEventListener("keyup", (e) => {
+  if(e.key === "Enter"){
+    const zip = (zipInput.value || "").trim();
+    fetchStoresByZip(zip);
+  }
+});
+
+storePricesBtn.addEventListener("click", () => {
+  fetchStorePrices();
+});
+
+storeSelect.addEventListener("change", () => {
+  storeError.textContent = "";
+});
+
+// Optional helper you already had for manual testing
 async function dmTestKroger() {
   const testBody = {
-    storeId: "01400513", // the store you just used in PowerShell
+    storeId: "01400513",
     items: [
       { key: "flour", name: "All purpose flour", qty: 2, unit: "cup" },
       { key: "eggs",  name: "Eggs",              qty: 6, unit: "each" }
@@ -513,7 +717,7 @@ async function dmTestKroger() {
     alert("Kroger test failed: " + err);
   }
 }
-// === end Kroger test wiring ===
+// === end Kroger backend wiring ===
 
 (async function init(){
   if(!window.SHOW_INTERNAL_HEADER){ const h=document.getElementById("internalHeader"); if(h) h.style.display="none"; }
