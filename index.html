@@ -135,8 +135,11 @@
         <!-- New: ZIP + store selection wired to Kroger backend -->
         <div class="tiny muted" style="margin-top:14px;">Or enter ZIP and choose a nearby store.</div>
         <div class="controls-inline" style="margin-top:6px;">
-          <input id="zipInput" placeholder="ZIP" style="max-width:120px;">
-          <button class="pill-btn" id="findStoresBtn" type="button" style="padding:8px 12px;font-size:12px;">Find stores</button>
+          <input id="zipInput" type="text" placeholder="ZIP" />
+<button id="applyRegionBtn" type="button" class="btn btn-region">
+  Apply regional pricing
+</button>
+
         </div>
         <div style="margin-top:8px;">
           <select id="storeSelect" style="width:100%;max-width:100%;padding:8px 10px;border-radius:999px;border:1px solid var(--line);font-size:13px;">
