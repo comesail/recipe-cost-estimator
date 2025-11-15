@@ -1,915 +1,808 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Recipe Cost Estimator</title>
-<meta name="description" content="Estimate total and per-serving cost using simple kitchen units. Type ingredients, amounts, and units — get a clean total and optional per-serving cost.">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;600&display=swap" rel="stylesheet">
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  "name": "Recipe Cost Estimator",
-  "applicationCategory": "FinanceApplication",
-  "operatingSystem": "Web",
-  "publisher": { "@type": "Organization", "name": "Eatonomics" },
-  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "description": "Interactive calculator that estimates total and per-serving recipe cost using common kitchen units."
-}
-</script>
-<style>
-  :root{ --blue:#1f66c1; --text:#111; --muted:#666; --line:#e5e5e5; --bg:#fff; --flash:#e9f2ff; }
-  html,body{margin:0;background:var(--bg);color:var(--text);}
-  body{font-family: system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; font-weight:300;}
-  .wrap{max-width:960px;margin:24px auto 80px;padding:0 16px;}
-  header{margin-bottom:12px;}
-  h1{font-size:28px;margin:0 0 6px;font-weight:300;letter-spacing:.2px;color:var(--blue);}
-  .lede{color:#333;margin:0 0 16px;font-weight:300;}
-  .card{ position:relative; border:1px solid var(--line); border-radius:0; padding:20px 16px 20px 64px; margin:14px 0; }
-  .card::before{ content: attr(data-n); position:absolute; left:8px; top:10px; font-family:'Outfit', Inter, system-ui, sans-serif; font-size:86px; line-height:1; font-weight:200; color:var(--blue); opacity:.10; letter-spacing:.5px; user-select:none; pointer-events:none; z-index:0; }
-  .sub{color:#333;margin:0 0 10px;font-size:18px;font-weight:300;} .sub strong{font-weight:600;}
-  .muted{color:var(--muted);font-size:13px;} .tiny{font-size:12px;}
-  label{display:block;font-size:13px;color:#222;margin:0 0 6px;font-weight:300;}
-  input,button,select{ font:inherit;border-radius:0;border:1px solid var(--line);padding:10px 12px;width:100%;box-sizing:border-box;background:#fff;color:var(--text); }
-  input[type="number"]{appearance:textfield;}
-  input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{appearance:none;margin:0;}
-  .row{display:grid;grid-template-columns:2.5fr 1fr 1.2fr auto;gap:10px;align-items:end;}
-  .row .btn{width:auto;padding:11px 16px;}
-  .btn{background:var(--blue);color:#fff;border:1px solid var(--blue);cursor:pointer;font-weight:400;} .btn:hover{filter:brightness(.95);}
-  .btn.ghost{background:#fff;color:var(--blue);border-color:var(--blue);} .linkish{border:none;background:none;color:var(--blue);padding:0;cursor:pointer;text-decoration:underline;}
-    .btn-region{
-    font-size:12px;
-    padding:8px 12px;
-    border-radius:0;
-  }
+  <meta charset="utf-8" />
+  <title>Recipe Cost Estimator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Estimate total and per-serving recipe cost using common kitchen units like cups, tablespoons, ounces, pounds, sticks, and cans." />
 
-  .controls-inline{display:flex;gap:12px;flex-wrap:wrap;align-items:center;} .stacked-tips{display:flex;flex-direction:column;gap:4px;margin-top:6px;}
-  table{width:100%;border-collapse:collapse;margin-top:12px;} th,td{border-bottom:1px solid var(--line);padding:10px 6px;text-align:left;font-weight:300;} th{color:#222;}
-  .right{text-align:right;}
-  .results-grid{display:grid; grid-template-columns: 1fr 320px; gap:24px; align-items:start;}
-  .results-right{border-left:1px solid var(--line); padding-left:18px;}
-  .pill-btn{ border-radius:999px; padding:10px 16px; border:2px solid var(--blue); background:#fff; color:var(--blue); font-weight:600; cursor:pointer; width:auto; }
-  .pill-btn:hover{filter:brightness(.97);}
-  .total{font-size:18px; display:flex; align-items:center; gap:8px;} .amount{font-weight:600;} .badge{border:1px solid var(--line); padding:2px 6px; font-size:11px; color:#1f66c1;}
-  .pill{border:1px solid var(--line);padding:10px 12px;} .flash{animation:flash 900ms ease;} @keyframes flash{0%{background:var(--flash);} 100%{background:transparent;}}
-  @media (max-width:900px){ .results-grid{grid-template-columns:1fr;} .results-right{border-left:none; padding-left:0;} }
-  @media (max-width:800px){ .row{grid-template-columns:1fr;} }
-</style>
+  <style>
+    :root{
+      --blue:#1f66d8;
+      --line:#e1e4eb;
+      --text:#222;
+      --muted:#555;
+      --bg:#fafbff;
+      --pill:#f2f4fb;
+      --danger:#b3261e;
+    }
+    *{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;}
+    body{margin:0;padding:0;background:#fff;color:var(--text);}
+    .page{max-width:960px;margin:0 auto;padding:24px 16px 48px;}
+    h1{font-weight:600;font-size:30px;margin:0 0 4px;}
+    .lede{margin:0 0 24px;font-size:14px;color:var(--muted);max-width:700px;}
+    .card{border:1px solid var(--line);border-radius:12px;padding:24px 24px 28px;background:#fff;box-shadow:0 8px 20px rgba(0,0,0,0.03);}
+    .layout{display:flex;gap:32px;align-items:flex-start;}
+    @media(max-width:840px){
+      .layout{flex-direction:column;}
+    }
+    .step-col{flex:1 1 0;}
+    .side-col{flex:0 0 290px;}
+    .step-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;}
+    .step-num{font-size:40px;font-weight:200;color:#e2e6f2;line-height:1;}
+    .step-title{font-weight:600;margin-bottom:2px;}
+    .step-sub{font-size:13px;color:var(--muted);}
+    label{display:block;font-size:13px;font-weight:500;margin-bottom:4px;}
+    input[type="text"],input[type="number"],select{
+      width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;
+      font-size:14px;outline:none;transition:border-color .15s,box-shadow .15s;
+    }
+    input[type="text"]:focus,input[type="number"]:focus,select:focus{
+      border-color:var(--blue);box-shadow:0 0 0 1px rgba(31,102,216,0.15);
+    }
+    .row{display:flex;gap:12px;}
+    .row + .row{margin-top:8px;}
+    .row > div{flex:1;}
+    .row > .shrink{flex:0 0 120px;}
+    .row > .xs{flex:0 0 72px;}
+    button{
+      border-radius:999px;border:1px solid var(--blue);background:var(--blue);
+      color:#fff;font-size:14px;padding:8px 16px;cursor:pointer;
+      font-weight:500;transition:filter .15s,border-color .15s,background .15s,color .15s;
+    }
+    button:hover{filter:brightness(.95);}
+    button:disabled{opacity:.5;cursor:default;}
+    .btn-ghost{background:#fff;color:var(--blue);border-color:var(--blue);}
+    .btn-plain{background:none;border:none;color:var(--blue);padding:0 4px;font-size:13px;}
+    .btn-plain:hover{text-decoration:underline;filter:none;}
+    .tiny{font-size:12px;}
+    .muted{color:var(--muted);}
+    table{width:100%;border-collapse:collapse;margin-top:12px;}
+    th,td{padding:4px 0;font-size:13px;text-align:left;}
+    th{border-bottom:1px solid var(--line);font-weight:500;color:var(--muted);}
+    td{border-bottom:1px solid #f2f3f7;}
+    td.qty,td.unit,td.money{text-align:right;}
+    .total-row{font-weight:600;border-top:2px solid var(--line);}
+    .total-row.flash{background:#fff9e6;transition:background .5s;}
+    .pill{display:inline-flex;align-items:center;gap:6px;background:var(--pill);border-radius:999px;padding:4px 9px;font-size:11px;color:var(--muted);}
+    .pill strong{color:var(--text);font-weight:600;}
+    .pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+    .field-note{font-size:12px;color:var(--muted);margin-top:4px;}
+    .error{color:var(--danger);font-size:12px;margin-top:4px;}
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500;}
+    .badge-strong{background:var(--blue);color:#fff;}
+    .badge-soft{background:var(--pill);color:var(--muted);}
+    .chip-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;}
+    .chip{font-size:11px;color:var(--muted);}
+    .chip span{font-weight:600;color:var(--text);}
+    .finder-card{border-radius:12px;border:1px dashed var(--line);padding:16px;margin-top:20px;background:var(--bg);}
+    .finder-title{font-size:13px;font-weight:600;margin-bottom:8px;}
+    .finder-row{display:flex;gap:8px;flex-wrap:wrap;}
+    .finder-row > *{flex:1 1 0;}
+    .btn-finder-main{width:100%;}
+    .btn-finder-sub{flex:1 1 0;background:#fff;color:var(--blue);}
+    .disclaimer{margin-top:16px;font-size:11px;color:var(--muted);line-height:1.45;}
+    .results-number{font-size:32px;font-weight:600;margin-bottom:2px;}
+    .results-label{font-size:13px;color:var(--muted);}
+    .kicker{font-size:11px;color:var(--muted);margin-top:4px;}
+    .tagline{font-size:11px;color:var(--muted);margin-top:6px;}
+    .inline-link{color:var(--blue);text-decoration:none;}
+    .inline-link:hover{text-decoration:underline;}
+    .pill-btn{border-radius:10px;padding:6px 10px;font-size:13px;}
+    .btn-region{border-radius:8px;font-size:12px;padding:6px 10px;}
+    .controls-inline{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:8px;}
+    .controls-inline input{flex:1 1 0;}
+    .controls-inline button{flex:0 0 auto;}
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <header id="internalHeader">
-    <h1>Recipe Cost Estimator</h1>
-    <p class="lede">Enter ingredients with normal kitchen units (cup, tablespoon, teaspoon, ounce, pound, stick, each, gram, kilogram, milliliter, liter, quart, pint, can). We’ll total the recipe and, if you like, show per-serving cost.</p>
-  </header>
+<div class="page">
 
-  <section class="card" data-n="1">
-    <h2 class="sub"><strong>Enter your ingredients below</strong></h2>
-    <div class="row" aria-label="ingredient entry">
-      <div>
-        <label for="ing">Ingredient (type to search)</label>
-        <input id="ing" list="ingList" placeholder="e.g., flour, butter, chicken breast">
-        <datalist id="ingList"></datalist>
-      </div>
-      <div>
-        <label for="qty">Quantity</label>
-        <input id="qty" placeholder="e.g., 1/2, 1.5, 2 or 2 × 28">
-      </div>
-      <div>
-        <label for="unit">Unit (type to filter)</label>
-        <input id="unit" list="unitList" placeholder="can, cup, dozen, each, gram, gallon, kilogram, liter, pound, milliliter, ounce, pint, quart, stick, tablespoon, teaspoon">
-        <datalist id="unitList"></datalist>
-      </div>
-      <div><button class="btn" id="addBtn">Add ingredient</button></div>
-    </div>
+  <div id="internalHeader" class="tiny muted" style="margin-bottom:8px;">
+    Internal preview &middot; not for public release
+  </div>
 
-    <table aria-label="recipe items">
-      <thead>
-        <tr><th>Ingredient</th><th class="right">Qty</th><th>Unit</th><th class="right">Line cost</th><th></th></tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-      <tfoot>
-        <tr><th colspan="3" class="right">Total</th><th class="right" id="totalCell">$0.00</th><th></th></tr>
-      </tfoot>
-    </table>
+  <h1>Recipe Cost Estimator</h1>
+  <p class="lede">
+    Enter ingredients with normal kitchen units (cup, tablespoon, teaspoon, ounce, pound, stick, each, gram, kilogram, milliliter, liter, quart, pint, can). We will total the recipe and, if you like, show per-serving cost.
+  </p>
 
-    <div class="controls-inline" style="margin-top:10px;">
-      <button class="linkish tiny" id="resetAll">Reset all</button>
-    </div>
-    <div class="stacked-tips muted tiny">
-      <span>Fractions like “1/2” or “1 1/2” are accepted.</span>
-      <span>Select “each” when counting whole ingredients (e.g., 3 eggs, 5 onions).</span>
-      <span>For cans, enter quantity like <strong>2 × 28 oz</strong> with unit <strong>can</strong> (defaults to <strong>1 × 15 oz</strong> if size is omitted). The “×” can be typed as “x”.</span>
-    </div>
-  </section>
+  <div class="card">
+    <div class="layout">
 
-  <section class="card" data-n="2">
-    <h2 class="sub"><strong>Optional</strong> — Want to know your per-serving cost? Enter how many servings this recipe makes.</h2>
-    <div style="max-width:240px">
-      <label for="servings">Servings (optional)</label>
-      <input id="servings" placeholder="e.g., 4">
-    </div>
-  </section>
-
-  <section class="card" data-n="R">
-    <div class="results-grid">
-      <div class="results-left">
-        <h2 class="sub"><strong>Results</strong></h2>
-        <div class="total" id="totalRow">
-          <span id="totalTxt">Total recipe cost: <span class="amount" id="totalVal">$0.00</span></span>
-          <span class="badge" id="regionBadge" style="display:none;">Regional</span>
+      <!-- LEFT COLUMN: inputs -->
+      <div class="step-col">
+        <!-- Step 1: ingredients -->
+        <div class="step-header">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-title">Enter your ingredients below</div>
+            <div class="step-sub">Use the ingredient search and common kitchen units.</div>
+          </div>
         </div>
-        <div class="pill" id="perServing" style="display:none;">Per-serving: $0.00</div>
 
-        <div class="controls-inline" style="margin:10px 0 6px;">
-          <label class="tiny" style="margin:0;">
-            <input type="checkbox" id="buyToggle" style="width:auto;margin-right:6px;"> Show buy-from-scratch total (rounds up to pack sizes)
-          </label>
+        <div>
+          <div class="row">
+            <div>
+              <label for="ingredientInput">Ingredient (type to search)</label>
+              <input id="ingredientInput" type="text" autocomplete="off" />
+              <div id="ingHelp" class="field-note">Start typing to see suggestions from the ingredient list.</div>
+              <div id="ingError" class="error" style="display:none;"></div>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <div class="xs">
+              <label for="qtyInput">Quantity</label>
+              <input id="qtyInput" type="text" value="1" />
+            </div>
+            <div class="shrink">
+              <label for="unitInput">Unit (type to filter)</label>
+              <input id="unitInput" type="text" value="cup" />
+            </div>
+            <div class="shrink" style="align-self:flex-end;">
+              <button id="addBtn">Add ingredient</button>
+            </div>
+          </div>
+
+          <div class="field-note" style="margin-top:12px;">
+            Fractions like "1/2" or "1 1/2" are accepted.
+            Select "each" when counting whole ingredients (for example 3 eggs, 5 onions).
+            For cans, enter quantity like 2 x 28 oz with unit "can" (defaults to 1 x 15 oz if size is omitted). The "x" can be typed as "x".
+          </div>
+
+          <div style="margin-top:16px;">
+            <table>
+              <thead>
+              <tr>
+                <th>Ingredient</th>
+                <th class="qty">Qty</th>
+                <th class="unit">Unit</th>
+                <th class="money">Line cost</th>
+              </tr>
+              </thead>
+              <tbody id="lineItems"></tbody>
+              <tfoot>
+              <tr id="totalRow" class="total-row">
+                <td>Total</td>
+                <td></td>
+                <td></td>
+                <td class="money" id="totalCell">$0.00</td>
+              </tr>
+              </tfoot>
+            </table>
+            <div style="margin-top:6px;">
+              <button id="resetAll" class="btn-plain">Reset all</button>
+            </div>
+          </div>
         </div>
-        <div class="pill" id="buyTotal" style="display:none;">If buying from scratch: $0.00</div>
-        <div class="tiny muted" id="leftoversList" style="display:none; margin-top:6px;"></div>
 
-        <div class="muted" id="priceNote" style="margin-top:10px;">Prices use national grocery averages. Actual costs may vary by store and region.</div>
+        <!-- Step 2: servings -->
+        <div style="margin-top:32px;">
+          <div class="step-header">
+            <div class="step-num">2</div>
+            <div>
+              <div class="step-title">Optional &mdash; Per-serving estimate</div>
+              <div class="step-sub">Enter how many servings this recipe makes.</div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="shrink" style="max-width:220px;">
+              <label for="servingsInput">Servings (optional)</label>
+              <input id="servingsInput" type="number" min="1" step="1" placeholder="e.g., 4" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="results-right">
-        <div class="tiny muted" style="margin-bottom:6px;"><strong>Optional</strong> — For a more accurate estimate, use my location.</div>
-        <button class="pill-btn" id="locBtn" type="button">Use my location</button>
-        <div class="muted tiny" id="regionNote" style="margin-top:8px;"></div>
+      <!-- RIGHT COLUMN: results + regional pricing -->
+      <div class="side-col">
+        <div class="step-header">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-title">Results</div>
+            <div class="step-sub">Total cost and optional per-serving estimate.</div>
+          </div>
+        </div>
 
-        <!-- New: ZIP + store selection wired to Kroger backend -->
-        <div class="tiny muted" style="margin-top:14px;">Or enter ZIP and choose a nearby store.</div>
-        <div class="controls-inline" style="margin-top:6px;">
-          <input id="zipInput" type="text" placeholder="ZIP" />
-<button id="applyRegionBtn" type="button" class="btn btn-region">
-  Apply regional pricing
-</button>
+        <div>
+          <div class="results-number" id="resultsTotal">$0.00</div>
+          <div class="results-label" id="resultsLabel">Total recipe cost</div>
+          <div class="kicker" id="perServingKicker"></div>
 
+          <div class="pill-row" id="summaryPills"></div>
+
+          <div class="field-note" style="margin-top:10px;" id="methodNote">
+            Totals include basic unit conversions and rounding to practical package sizes.
+          </div>
+
+          <hr style="margin:20px 0;border:none;border-top:1px solid var(--line);" />
+
+          <!-- Regional pricing controls (ZIP-based, with optional store dropdown) -->
+          <div>
+            <div class="tiny muted" style="margin-bottom:6px;">
+              Optional &mdash; For a more accurate estimate, use my location.
+            </div>
+            <button id="locBtn" class="btn-ghost" style="margin-bottom:10px;">Use my location</button>
+
+            <div class="tiny muted" style="margin-top:6px;">Or enter ZIP and choose a nearby store.</div>
+            <div class="controls-inline" style="margin-top:6px;">
+              <input id="zipInput" type="text" placeholder="ZIP" />
+              <button id="findStoresBtn" class="pill-btn">Find stores</button>
+            </div>
+
+            <div class="field-note" id="storeError" style="display:none;margin-top:4px;"></div>
+
+            <div style="margin-top:8px;">
+              <select id="storeSelect">
+                <option value="">No store selected</option>
+              </select>
+            </div>
+
+            <div style="margin-top:10px;">
+              <button id="storePricesBtn" class="btn-ghost" disabled>Use store prices</button>
+            </div>
+
+            <div style="margin-top:10px;font-size:11px;">
+              <span id="regionBadge" class="badge badge-soft" style="display:none;">Regional</span>
+              <span id="regionNote" class="tiny muted">Using national grocery averages.</span>
+              <div id="priceNote" class="tiny muted" style="margin-top:4px;">
+                Prices use national grocery averages. Actual costs may vary by store and region.
+              </div>
+            </div>
+          </div>
+
+          <div class="finder-card">
+            <div class="finder-title">Take this list to the store</div>
+            <div class="finder-row">
+              <button class="btn-finder-main">Copy ingredients and totals</button>
+              <button class="btn-finder-sub">Email to myself</button>
+              <button class="btn-finder-sub">Download as text</button>
+            </div>
+            <div class="disclaimer">
+              Use for planning only. Prices are estimates based on typical grocery costs and may not match your local store. Always check in-store prices and promotions.
+            </div>
+          </div>
         </div>
-        <div style="margin-top:8px;">
-          <select id="storeSelect" style="width:100%;max-width:100%;padding:8px 10px;border-radius:999px;border:1px solid var(--line);font-size:13px;">
-            <option value="">No store selected</option>
-          </select>
-        </div>
-        <div class="controls-inline" style="margin-top:6px;">
-          <button class="pill-btn" id="storePricesBtn" type="button" style="padding:8px 12px;font-size:12px;">Use store prices</button>
-        </div>
-        <div class="tiny muted" id="storeError" style="margin-top:6px;"></div>
-      </div>
-    </div>
-  </section>
-</div>
+
+      </div><!-- /side-col -->
+
+    </div><!-- /layout -->
+  </div><!-- /card -->
+
+  <div class="disclaimer" style="margin-top:18px;">
+    This tool is for planning and education only. Estimates are based on typical grocery prices and unit conversions. Results depend on the information you enter and may not reflect actual store prices or promotions.
+  </div>
+
+</div><!-- /page -->
 
 <script>
-window.SHOW_INTERNAL_HEADER = false;
+  // === Globals ===
+  let INGREDIENT_DATA = {};
+  let INGREDIENT_KEYS = [];
+  let rows = [];
+  let servings = null;
+  let REGION = { name: "National", factor: 1.00 };
+  let useStorePricing = false;
+  let STORE_ING = {};
+  let STORE_LIST = [];
+  let ingredientsLoaded = false;
 
-const UNIT_LABELS = { can:"can", cup:"cup", dozen:"dozen", each:"each", g:"gram", kg:"kilogram", ml:"milliliter", l:"liter", oz:"ounce", lb:"pound", pt:"pint", qt:"quart", stick:"stick", tbsp:"tablespoon", tsp:"teaspoon", gallon:"gallon", "fl oz":"fl oz" };
-const UNIT_ALIASES = {
-  "pound":"lb","pounds":"lb","lb":"lb","lbs":"lb",
-  "ounce":"oz","ounces":"oz","oz":"oz","fluid ounce":"fl oz","fl oz":"fl oz",
-  "tablespoon":"tbsp","tablespoons":"tbsp","tbsp":"tbsp","T":"tbsp",
-  "teaspoon":"tsp","teaspoons":"tsp","tsp":"tsp","t":"tsp",
-  "cup":"cup","cups":"cup","quart":"qt","quarts":"qt","qt":"qt","pint":"pt","pints":"pt","pt":"pt",
-  "gram":"g","grams":"g","g":"g","kilogram":"kg","kilograms":"kg","kg":"kg","milliliter":"ml","milliliters":"ml","ml":"ml",
-  "liter":"l","liters":"l","litre":"l","litres":"l","l":"l","dozen":"dozen","each":"each","stick":"stick","sticks":"stick","can":"can","cans":"can","gallon":"gallon","gallons":"gallon"
-};
-function normalizeUnit(s){ if(!s) return ""; const k=s.trim().toLowerCase(); return UNIT_ALIASES[k] || k; }
-const ALL_UNITS = ["can","cup","dozen","each","fl oz","g","gallon","kg","l","lb","ml","oz","pt","qt","stick","tbsp","tsp"].sort();
+  const ingredientInput = document.getElementById("ingredientInput");
+  const qtyInput        = document.getElementById("qtyInput");
+  const unitInput       = document.getElementById("unitInput");
+  const addBtn          = document.getElementById("addBtn");
+  const lineItemsBody   = document.getElementById("lineItems");
+  const totalCell       = document.getElementById("totalCell");
+  const totalRow        = document.getElementById("totalRow");
+  const servingsInput   = document.getElementById("servingsInput");
+  const resetAllBtn     = document.getElementById("resetAll");
+  const ingError        = document.getElementById("ingError");
+  const ingHelp         = document.getElementById("ingHelp");
 
-const DATA = {
-  "flour": {label:"Flour (all-purpose)", baseUnit:"lb", pricePerBase:0.60, packSize:5, packUnit:"lb", conversions:{cup:0.25,tbsp:0.015625,tsp:0.0052083,oz:1/16,lb:1}},
-  "sugar": {label:"Sugar (granulated)", baseUnit:"lb", pricePerBase:0.80, packSize:4, packUnit:"lb", conversions:{cup:0.50,tbsp:0.03125,tsp:0.0104167,oz:1/16,lb:1}},
-  "brown sugar": {label:"Brown sugar (packed)", baseUnit:"lb", pricePerBase:1.10, packSize:2, packUnit:"lb", conversions:{cup:0.44,tbsp:0.0275,tsp:0.0091667,oz:1/16,lb:1}},
-  "baking powder": {label:"Baking powder", baseUnit:"oz", pricePerBase:0.20, packSize:8, packUnit:"oz", conversions:{tsp:0.1667,tbsp:0.5,oz:1}},
-  "baking soda": {label:"Baking soda", baseUnit:"oz", pricePerBase:0.10, packSize:8, packUnit:"oz", conversions:{tsp:0.1667,tbsp:0.5,oz:1}},
-  "cocoa powder": {label:"Cocoa powder", baseUnit:"oz", pricePerBase:0.35, packSize:8, packUnit:"oz", conversions:{tbsp:0.125,tsp:0.04167,oz:1}},
-  "yeast": {label:"Yeast (dry active)", baseUnit:"oz", pricePerBase:1.20, packSize:4, packUnit:"oz", conversions:{tsp:0.111,tbsp:0.333,oz:1}},
+  const resultsTotal    = document.getElementById("resultsTotal");
+  const resultsLabel    = document.getElementById("resultsLabel");
+  const perServingKicker= document.getElementById("perServingKicker");
+  const summaryPills    = document.getElementById("summaryPills");
+  const methodNote      = document.getElementById("methodNote");
 
-  "butter": {label:"Butter", baseUnit:"stick", pricePerBase:1.00, packSize:4, packUnit:"stick", conversions:{stick:1,tbsp:1/8,tsp:1/24,cup:0.5,oz:0.25,lb:0.25}},
-  "milk": {label:"Milk (whole)", baseUnit:"gallon", pricePerBase:3.50, packSize:1, packUnit:"gallon", conversions:{cup:1/16,tbsp:1/256,tsp:1/768,gallon:1,qt:1/4,pt:1/8,ml:1/3785.41,l:1/3.78541}},
-  "eggs": {label:"Eggs", baseUnit:"dozen", pricePerBase:2.50, packSize:12, packUnit:"each", conversions:{each:1/12,dozen:1}},
-  "cheddar": {label:"Cheddar cheese (shredded)", baseUnit:"oz", pricePerBase:0.28, packSize:8, packUnit:"oz", cupOz:4.0, conversions:{cup:4.0,oz:1,lb:16}},
-  "mozzarella": {label:"Mozzarella (shredded)", baseUnit:"oz", pricePerBase:0.30, packSize:8, packUnit:"oz", cupOz:4.0, conversions:{cup:4.0,oz:1,lb:16}},
-  "parmesan": {label:"Parmesan (grated)", baseUnit:"oz", pricePerBase:0.80, packSize:8, packUnit:"oz", cupOz:3.0, conversions:{tbsp:0.5,oz:1,cup:3.0}},
+  const locBtn          = document.getElementById("locBtn");
+  const zipInput        = document.getElementById("zipInput");
+  const findStoresBtn   = document.getElementById("findStoresBtn");
+  const storeSelect     = document.getElementById("storeSelect");
+  const storePricesBtn  = document.getElementById("storePricesBtn");
+  const storeError      = document.getElementById("storeError");
+  const regionBadge     = document.getElementById("regionBadge");
+  const regionNote      = document.getElementById("regionNote");
+  const priceNote       = document.getElementById("priceNote");
 
-  "olive oil": {label:"Olive oil", baseUnit:"tbsp", pricePerBase:0.10, packSize:16, packUnit:"fl oz", conversions:{tbsp:1,tsp:1/3,cup:16,ml:0.067628}},
-  "vegetable oil": {label:"Vegetable oil", baseUnit:"tbsp", pricePerBase:0.05, packSize:48, packUnit:"fl oz", conversions:{tbsp:1,tsp:1/3,cup:16,ml:0.067628}},
-  "mayonnaise": {label:"Mayonnaise", baseUnit:"tbsp", pricePerBase:0.12, packSize:30, packUnit:"oz", conversions:{tbsp:1,tsp:1/3,cup:16}},
-  "ketchup": {label:"Ketchup", baseUnit:"tbsp", pricePerBase:0.04, packSize:38, packUnit:"oz", conversions:{tbsp:1,tsp:1/3,cup:16}},
-
-  "rice": {label:"Rice (dry)", baseUnit:"lb", pricePerBase:1.20, packSize:2, packUnit:"lb", conversions:{cup:0.45,lb:1,oz:1/16,g:1/453.592,kg:2.20462}},
-  "pasta": {label:"Pasta (dry)", baseUnit:"lb", pricePerBase:1.10, packSize:1, packUnit:"lb", conversions:{cup:0.25,lb:1,oz:1/16}},
-  "quinoa": {label:"Quinoa (dry)", baseUnit:"lb", pricePerBase:3.50, packSize:1, packUnit:"lb", conversions:{cup:0.35,lb:1,oz:1/16}},
-  "oats": {label:"Oats (rolled)", baseUnit:"lb", pricePerBase:1.20, packSize:2, packUnit:"lb", conversions:{cup:0.30,lb:1,oz:1/16}},
-  "bread": {label:"Bread (sandwich loaf)", baseUnit:"each", pricePerBase:2.50, packSize:1, packUnit:"each", conversions:{each:1}},
-
-  "onion": {label:"Onion (medium)", baseUnit:"lb", pricePerBase:1.20, packSize:1, packUnit:"lb", conversions:{each:0.33,lb:1,oz:1/16,cup:0.33,g:1/453.592}},
-  "carrots": {label:"Carrots", baseUnit:"lb", pricePerBase:1.00, packSize:1, packUnit:"lb", conversions:{each:0.125,lb:1,oz:1/16,cup:0.30}},
-  "potato": {label:"Potato (russet)", baseUnit:"lb", pricePerBase:0.90, packSize:5, packUnit:"lb", conversions:{each:0.33,lb:1,oz:1/16}},
-  "tomato": {label:"Tomato", baseUnit:"lb", pricePerBase:1.49, packSize:1, packUnit:"lb", conversions:{each:0.33,lb:1,oz:1/16,cup:0.35}},
-  "garlic": {label:"Garlic", baseUnit:"oz", pricePerBase:0.40, packSize:3, packUnit:"oz", conversions:{clove:0.17,tsp:0.167,oz:1}},
-  "bell pepper": {label:"Bell pepper (medium)", baseUnit:"each", pricePerBase:0.90, packSize:3, packUnit:"each", conversions:{each:1,cup:0.5}},
-  "spinach": {label:"Spinach (fresh)", baseUnit:"lb", pricePerBase:3.50, packSize:1, packUnit:"lb", conversions:{cup:0.10,oz:1/16,lb:1}},
-  "lettuce": {label:"Lettuce (romaine)", baseUnit:"each", pricePerBase:1.99, packSize:1, packUnit:"each", conversions:{each:1,cup:0.1}},
-
-  "chicken breast": {label:"Chicken breast (boneless)", baseUnit:"lb", pricePerBase:3.29, packSize:1.5, packUnit:"lb", conversions:{lb:1,oz:1/16,g:1/453.592,kg:2.20462}},
-  "chicken thighs": {label:"Chicken thighs (bone-in)", baseUnit:"lb", pricePerBase:1.99, packSize:2.5, packUnit:"lb", conversions:{lb:1,oz:1/16}},
-  "ground beef": {label:"Ground beef (80/20)", baseUnit:"lb", pricePerBase:4.19, packSize:1, packUnit:"lb", conversions:{lb:1,oz:1/16,g:1/453.592,kg:2.20462}},
-  "pork chops": {label:"Pork chops", baseUnit:"lb", pricePerBase:3.29, packSize:1.5, packUnit:"lb", conversions:{lb:1,oz:1/16}},
-  "salmon": {label:"Salmon (fillet)", baseUnit:"lb", pricePerBase:8.99, packSize:1, packUnit:"lb", conversions:{lb:1,oz:1/16}},
-
-  "black beans": {label:"Black beans (canned)", baseUnit:"can", pricePerBase:1.00, packSize:1, packUnit:"can", conversions:{can:1}},
-  "chickpeas": {label:"Chickpeas / garbanzo (canned)", baseUnit:"can", pricePerBase:1.10, packSize:1, packUnit:"can", conversions:{can:1}},
-  "diced tomatoes": {label:"Tomatoes, diced (canned)", baseUnit:"can", pricePerBase:1.20, packSize:1, packUnit:"can", conversions:{can:1}},
-  "coconut milk": {label:"Coconut milk (canned)", baseUnit:"can", pricePerBase:2.00, packSize:1, packUnit:"can", conversions:{can:1}},
-
-  "yogurt": {label:"Yogurt (plain)", baseUnit:"cup", pricePerBase:0.80, packSize:4, packUnit:"cup", conversions:{cup:1,tbsp:1/16,ml:236.588}},
-  "tortillas": {label:"Tortillas (8-inch)", baseUnit:"each", pricePerBase:0.25, packSize:10, packUnit:"each", conversions:{each:1}},
-  "peanut butter": {label:"Peanut butter", baseUnit:"tbsp", pricePerBase:0.08, packSize:40, packUnit:"tbsp", conversions:{tbsp:1,tsp:1/3,cup:16}},
-  "salt": {label:"Salt", baseUnit:"oz", pricePerBase:0.05, packSize:16, packUnit:"oz", conversions:{tsp:0.2,tbsp:0.6,oz:1}},
-  "black pepper": {label:"Black pepper", baseUnit:"oz", pricePerBase:0.60, packSize:4, packUnit:"oz", conversions:{tsp:0.15,tbsp:0.45,oz:1}},
-  "coconut_shredded": {label:"Coconut (shredded)", baseUnit:"oz", pricePerBase:0.20, packSize:14, packUnit:"oz", cupOz:3.0, conversions:{cup:3.0,oz:1,lb:16}}
-};
-
-const REGION_FACTORS = [
-  {name:"Northeast", factor:1.06, box:[[-82,36],[-66,47]]},
-  {name:"Southeast", factor:0.96, box:[[-91,24],[-75,36]]},
-  {name:"Midwest",   factor:0.98, box:[[-104,36],[-82,49]]},
-  {name:"Southwest", factor:1.00, box:[[-115,25],[-95,37]]},
-  {name:"West",      factor:1.08, box:[[-125,32],[-114,49]]}
-];
-let REGION = { name:"National", factor:1.00 };
-
-const ingInput = document.getElementById("ing");
-const unitInput = document.getElementById("unit");
-const qtyInput  = document.getElementById("qty");
-const servingsInput = document.getElementById("servings");
-const ingList  = document.getElementById("ingList");
-const unitList = document.getElementById("unitList");
-const tbody = document.getElementById("tbody");
-const totalCell = document.getElementById("totalCell");
-const totalRow = document.getElementById("totalRow");
-const totalVal = document.getElementById("totalVal");
-const perServingEl = document.getElementById("perServing");
-const priceNote = document.getElementById("priceNote");
-const regionNote = document.getElementById("regionNote");
-const regionBadge = document.getElementById("regionBadge");
-const buyToggle = document.getElementById("buyToggle");
-const buyTotalEl = document.getElementById("buyTotal");
-const leftoversList = document.getElementById("leftoversList");
-
-// New DOM refs for store wiring
-const zipInput = document.getElementById("zipInput");
-const findStoresBtn = document.getElementById("findStoresBtn");
-const storeSelect = document.getElementById("storeSelect");
-const storePricesBtn = document.getElementById("storePricesBtn");
-const storeError = document.getElementById("storeError");
-
-function seedIng(){
-  ingList.innerHTML = "";
-  Object.keys(DATA).sort().forEach(k=>{
-    const item = DATA[k];
-    if(!item) return;
-
-    const o = document.createElement("option");
-    // Show human-friendly name in the dropdown
-    o.value = item.label || k;
-    o.label = item.label || k;
-    // Remember the key so we can map back if needed
-    o.dataset.key = k;
-
-    ingList.appendChild(o);
-  });
-}
-function seedUnits(){
-  unitList.innerHTML="";
-  ALL_UNITS.forEach(u=>{
-    const o=document.createElement("option"); o.value = u; o.label = UNIT_LABELS[u] || u; unitList.appendChild(o);
-  });
-}
-function parseQuantity(str){
-  if(!str) return NaN;
-  str=(""+str).trim().toLowerCase();
-  const x=str.match(/^(\d+(?:\.\d+)?)\s*(?:x|×)\s*(\d+(?:\.\d+)?)$/i);
-  if(x) return {type:"x", n:Number(x[1]), m:Number(x[2])};
-  if(/\d+\s+\d+\/\d+/.test(str)){ const [w,f]=str.split(/\s+/); const [n,d]=f.split("/").map(Number); return Number(w)+n/d; }
-  if(/^\d+\/\d+$/.test(str)){ const [n,d]=str.split("/").map(Number); return n/d; }
-  const v=Number(str); return isFinite(v)?v:NaN;
-}
-
-let rows=[];
-function fmt(n){ return "$"+(isFinite(n)? n.toFixed(2):"0.00"); }
-function render(){
-  tbody.innerHTML=""; let total=0;
-  rows.forEach((r,i)=>{
-    total+=r.lineCost;
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
-      <td>${r.label}</td>
-      <td class="right">${r.qtyDisplay}</td>
-      <td>${r.unitDisplay}</td>
-      <td class="right">${fmt(r.lineCost)}</td>
-      <td><button class="linkish tiny" data-i="${i}">remove</button></td>`;
-    tbody.appendChild(tr);
-  });
-  tbody.querySelectorAll("[data-i]").forEach(b=>{
-    b.addEventListener("click",e=>{ rows.splice(Number(e.target.getAttribute("data-i")),1); render(); });
-  });
-  totalCell.textContent = fmt(total);
-  totalVal.textContent = fmt(total);
-  const s=Number(servingsInput.value);
-  if(isFinite(s)&&s>0){ perServingEl.style.display=""; perServingEl.textContent=`Per-serving: ${fmt(total/s)}`; }
-  else { perServingEl.style.display="none"; }
-
-  if(buyToggle.checked){
-    let buyTotal = 0;
-    let leftoversLines = [];
-    rows.forEach(r=>{
-      const item = DATA[r.key];
-      if(!item || item.packSize==null || !item.packUnit){ return; }
-      const packInBase = convertBetweenUnits(item.packSize, item.packUnit, item.baseUnit, item);
-      if(!packInBase || packInBase<=0){ return; }
-      const packs = Math.ceil(r.baseQty / packInBase);
-      const purchasedBaseQty = packs * packInBase;
-      const buyLineCost = purchasedBaseQty * item.pricePerBase * (REGION.factor||1);
-      buyTotal += buyLineCost;
-      const leftoverBase = purchasedBaseQty - r.baseQty;
-      if(leftoverBase > 1e-6){
-        leftoversLines.push(`${item.label}: leftover ~ ${formatQty(leftoverBase, item.baseUnit)}`);
-      }
-    });
-    buyTotalEl.style.display=""; buyTotalEl.textContent = `If buying from scratch: ${fmt(buyTotal)}`;
-    leftoversList.style.display = leftoversLines.length ? "" : "none";
-    leftoversList.innerHTML = leftoversLines.length ? `<div><strong>Leftovers after purchase</strong></div><ul class="tiny" style="margin:6px 0 0 18px;">${leftoversLines.map(x=>`<li>${x}</li>`).join("")}</ul>` : "";
-  }else{
-    buyTotalEl.style.display="none"; leftoversList.style.display="none"; leftoversList.innerHTML="";
-  }
-}
-
-function formatQty(q, unit){
-  const n = (q>=1) ? Math.round(q*100)/100 : Math.round(q*1000)/1000;
-  return `${n} ${UNIT_LABELS[unit]||unit}`;
-}
-
-function toBaseFactor(item, unitRaw, qtyRaw){
-  const unit = normalizeUnit(unitRaw);
-  const base = normalizeUnit(item.baseUnit || "");
-  const conv = item.conversions || {};
-
-  // Special handling for "2x28 oz" style cans
-  if(unit === "can"){
-    let cans = 1;
-    let ozPerCan = 15;
-    const q = parseQuantity(qtyRaw);
-    if(typeof q === "object" && q.type === "x"){ cans = q.n; ozPerCan = q.m; }
-    else if(isFinite(q)){ cans = q; }
-    const displayQty = `${cans} × ${ozPerCan} oz`;
-    const displayUnit = `can (oz)`;
-    if(base === "lb"){ return { factor: (cans * ozPerCan) / 16, qtyDisplay: displayQty, unitDisplay: displayUnit }; }
-    if(base === "oz"){ return { factor: (cans * ozPerCan),       qtyDisplay: displayQty, unitDisplay: displayUnit }; }
-  }
-
-  // Direct per-item conversion table (from DATA / CSV)
-  if(conv[unit] != null){
-    return {
-      factor: conv[unit],
-      qtyDisplay: qtyRaw,
-      unitDisplay: UNIT_LABELS[unit] || unit
-    };
-  }
-
-  // Families for generic conversions
-  const weightUnits = { lb:1, oz:1, g:1, kg:1 };
-  const volumeUnits = { cup:1, tbsp:1, tsp:1, "fl oz":1, ml:1, l:1 };
-
-  function genericFactor(u){
-    if(!u) return null;
-    u = normalizeUnit(u);
-
-    // If unit already matches base
-    if(u === base) return 1;
-
-    // If we have cupOz and we are bridging volume -> weight
-    if(item.cupOz && weightUnits[base] && volumeUnits[u]){
-      let cups = null;
-      if(u === "cup") cups = 1;
-      else if(u === "tbsp") cups = 1/16;
-      else if(u === "tsp") cups = 1/48;
-      else if(u === "fl oz") cups = 1/8;
-      else if(u === "ml") cups = 1/240;
-      else if(u === "l") cups = 1000/240;
-
-      if(cups != null){
-        const oz = cups * item.cupOz;
-        if(base === "oz") return oz;
-        if(base === "lb") return oz / 16;
-        if(base === "g")  return oz * 28.3495;
-        if(base === "kg") return (oz * 28.3495) / 1000;
-      }
-    }
-
-    // Generic weight family conversions (no density assumptions)
-    if(weightUnits[base] && weightUnits[u]){
-      let lbsFromU = null;
-      if(u === "lb") lbsFromU = 1;
-      else if(u === "oz") lbsFromU = 1/16;
-      else if(u === "g") lbsFromU = 1/453.592;
-      else if(u === "kg") lbsFromU = 2.20462;
-
-      if(lbsFromU != null){
-        if(base === "lb") return lbsFromU;
-        if(base === "oz") return lbsFromU * 16;
-        if(base === "g")  return lbsFromU * 453.592;
-        if(base === "kg") return lbsFromU / 2.20462;
-      }
-    }
-
-    // Generic volume family conversions (pure volume)
-    if(volumeUnits[base] && volumeUnits[u]){
-      let cups = null;
-      if(u === "cup") cups = 1;
-      else if(u === "tbsp") cups = 1/16;
-      else if(u === "tsp") cups = 1/48;
-      else if(u === "fl oz") cups = 1/8;
-      else if(u === "ml") cups = 1/240;
-      else if(u === "l") cups = 1000/240;
-
-      if(cups != null){
-        if(base === "cup")   return cups;
-        if(base === "tbsp")  return cups * 16;
-        if(base === "tsp")   return cups * 48;
-        if(base === "fl oz") return cups * 8;
-        if(base === "ml")    return cups * 240;
-        if(base === "l")     return (cups * 240) / 1000;
-      }
-    }
-
-    // Fallback: approximate volume -> weight when we have no cupOz
-    if(!item.cupOz && weightUnits[base] && volumeUnits[u]){
-      const assumedOzPerCup = 8; // safe midline fallback
-      let cups = null;
-      if(u === "cup") cups = 1;
-      else if(u === "tbsp") cups = 1/16;
-      else if(u === "tsp") cups = 1/48;
-      else if(u === "fl oz") cups = 1/8;
-      else if(u === "ml") cups = 1/240;
-      else if(u === "l") cups = 1000/240;
-
-      if(cups != null){
-        const oz = cups * assumedOzPerCup;
-        if(base === "oz") return oz;
-        if(base === "lb") return oz / 16;
-        if(base === "g")  return oz * 28.3495;
-        if(base === "kg") return (oz * 28.3495) / 1000;
-      }
-    }
-
-    // Keep the existing gallon helpers (milk etc.)
-    if(base === "gallon"){
-      if(u === "ml")   return 1/3785.41;
-      if(u === "l")    return 1/3.78541;
-      if(u === "qt")   return 1/4;
-      if(u === "pt")   return 1/8;
-      if(u === "cup")  return 1/16;
-      if(u === "tbsp") return 1/256;
-      if(u === "tsp")  return 1/768;
-      if(u === "fl oz")return 1/128;
-    }
-
-    return null;
-  }
-
-  const factor = genericFactor(unit);
-  if(factor != null){
-    return {
-      factor,
-      qtyDisplay: qtyRaw,
-      unitDisplay: UNIT_LABELS[unit] || unit
-    };
-  }
-
-  // Final exact match if nothing else caught it
-  if(unit === base){
-    return {
-      factor: 1,
-      qtyDisplay: qtyRaw,
-      unitDisplay: UNIT_LABELS[unit] || unit
-    };
-  }
-
-  return null;
-}
-
-
-
-function convertBetweenUnits(qty, srcUnit, dstUnit, item){
-  srcUnit = normalizeUnit(srcUnit); dstUnit = normalizeUnit(dstUnit);
-  if(srcUnit===dstUnit) return qty;
-  function factorToBase(u){
-    const conv=item.conversions||{};
-    if(u==="cup" && item.cupOz && (item.baseUnit==="oz" || item.baseUnit==="lb")){
-      if(item.baseUnit==="oz") return item.cupOz;
-      if(item.baseUnit==="lb") return item.cupOz/16;
-    }
-    if(conv[u]!=null) return conv[u];
-    if(item.baseUnit==="lb"){
-      if(u==="oz") return 1/16;
-      if(u==="g") return 1/453.592;
-      if(u==="kg") return 2.20462;
-    }
-    if(item.baseUnit==="gallon"){
-      if(u==="ml") return 1/3785.41;
-      if(u==="l") return 1/3.78541;
-      if(u==="qt") return 1/4;
-      if(u==="pt") return 1/8;
-      if(u==="cup") return 1/16;
-      if(u==="tbsp") return 1/256;
-      if(u==="tsp") return 1/768;
-      if(u==="fl oz") return 1/128;
-    }
-    if(u===item.baseUnit) return 1;
-    return null;
-  }
-  const fSrc = factorToBase(srcUnit);
-  const fDst = factorToBase(dstUnit);
-  if(fSrc==null || fDst==null) return null;
-  return qty * fSrc / fDst;
-}
-
-document.getElementById("addBtn").addEventListener("click", ()=>{
-  const nameRaw = (ingInput.value || "").trim();
-  const qtyRaw  = (qtyInput.value  || "").trim();
-  const unitRaw = normalizeUnit(unitInput.value || "");
-  if(!nameRaw || !qtyRaw || !unitRaw) return;
-
-  const lower = nameRaw.toLowerCase();
-  let key = null;
-  let item = null;
-
-  // 1) Direct key match (user typed the internal key)
-  if(DATA[lower]){
-    key = lower;
-    item = DATA[lower];
-  } else {
-    // 2) Exact label match
-    const hitLabel = Object.keys(DATA).find(k=>{
-      const it = DATA[k];
-      return (it.label || "").toLowerCase() === lower;
-    });
-    if(hitLabel){
-      key = hitLabel;
-      item = DATA[hitLabel];
-    } else {
-      // 3) Match via datalist option's data-key (user chose from dropdown)
-      const opt = Array.from(ingList.options || []).find(o => o.value === nameRaw && o.dataset.key && DATA[o.dataset.key]);
-      if(opt){
-        key = opt.dataset.key;
-        item = DATA[key];
-      } else {
-        // 4) Loose fallback: substring on key or label
-        const hitLoose = Object.keys(DATA).find(k=>{
-          const it = DATA[k];
-          const lbl = (it.label || "").toLowerCase();
-          return k.includes(lower) || lbl.includes(lower);
-        });
-        if(hitLoose){
-          key = hitLoose;
-          item = DATA[hitLoose];
+  // === Utility: parse quantity, including simple fractions ===
+  function parseQty(str){
+    if(!str) return NaN;
+    str = String(str).trim();
+    if(!str) return NaN;
+    if(str.includes("/")){
+      const parts = str.split(" ");
+      let total = 0;
+      for(const p of parts){
+        if(!p) continue;
+        if(p.includes("/")){
+          const [n,d] = p.split("/");
+          const nf = parseFloat(n.replace(/[^\d.]/g,""));
+          const df = parseFloat(d.replace(/[^\d.]/g,""));
+          if(!isNaN(nf) && !isNaN(df) && df!==0){ total += nf/df; }
+        }else{
+          const v = parseFloat(p.replace(/[^\d.]/g,""));
+          if(!isNaN(v)) total += v;
         }
       }
+      return total;
     }
+    return parseFloat(str.replace(/[^\d.]/g,""));
   }
 
-  if(!item){
-    alert("Ingredient not found in ingredient list.");
-    return;
+  // === Units + conversions ===
+  const UNIT_GROUPS = {
+    volume: ["tsp","teaspoon","tbsp","tablespoon","fl oz","fluid ounce","cup","quart","pint","ml","milliliter","liter","l"],
+    weight: ["oz","ounce","lb","pound","g","gram","kg","kilogram"],
+    each:   ["each","stick","can","egg","piece","clove"],
+  };
+
+  function normalizeUnit(u){
+    if(!u) return "";
+    u = u.trim().toLowerCase();
+    if(u === "t" || u === "tsp.") return "tsp";
+    if(u === "tbsp." || u === "tbs" || u === "T") return "tbsp";
+    if(u === "fl. oz" || u === "floz") return "fl oz";
+    if(u === "c") return "cup";
+    if(u === "pt") return "pint";
+    if(u === "qt") return "quart";
+    if(u === "oz.") return "oz";
+    if(u === "lb." || u === "lbs") return "lb";
+    if(u === "g.") return "g";
+    if(u === "kg.") return "kg";
+    if(u === "ml.") return "ml";
+    if(u === "l.") return "l";
+    if(u === "ea") return "each";
+    return u;
   }
 
-  const q = parseQuantity(qtyRaw);
-  let qtyNum;
-  if(typeof q === "object" && q.type === "x"){ qtyNum = q.n; }
-  else if(isFinite(q)){ qtyNum = q; }
-  else {
-    alert("Enter a valid quantity (e.g., 1/2, 1.5, 2, or 2x28).");
-    return;
+  function unitGroup(unit){
+    unit = normalizeUnit(unit);
+    for(const g of Object.keys(UNIT_GROUPS)){
+      if(UNIT_GROUPS[g].includes(unit)) return g;
+    }
+    return null;
   }
 
-  const resolved = toBaseFactor(item, unitRaw, qtyRaw);
-  if(!resolved){
-    alert(`Unit "${unitRaw}" is not available for ${item.label} yet.`);
-    return;
+  // generic cup-ounce assumptions when we do not have a food-specific density
+  function genericCupOzFor(group){
+    if(group === "weight") return 4.5;   // generic "cup to oz" guess for dry-ish ingredients
+    if(group === "volume") return 8.0;   // cup to fl oz
+    return null;
   }
 
-  const pricePerBase = item.pricePerBase * (REGION.factor || 1);
-  const baseQty = (typeof q === "object" && q.type === "x")
-    ? resolved.factor
-    : qtyNum * resolved.factor;
-  const lineCost = baseQty * pricePerBase;
+  function convertToBaseQty(qty, fromUnit, baseUnit, ing){
+    fromUnit = normalizeUnit(fromUnit);
+    baseUnit = normalizeUnit(baseUnit);
 
-  const qtyForBackend  = qtyNum;
-  const unitForBackend = unitRaw;
+    if(fromUnit === baseUnit) return qty;
 
-  rows.push({
-    key,
-    label: item.label || nameRaw,
-    qtyDisplay: resolved.qtyDisplay || qtyRaw,
-    unitDisplay: resolved.unitDisplay || (UNIT_LABELS[unitRaw] || unitRaw),
-    baseQty,
-    lineCost,
-    qtyForBackend,
-    unitForBackend
-  });
+    const gFrom = unitGroup(fromUnit);
+    const gBase = unitGroup(baseUnit);
 
-  ingInput.value = "";
-  qtyInput.value = "";
-  unitInput.value = "";
-  render();
-});
-;
-
-document.getElementById("resetAll").addEventListener("click", ()=>{ rows=[]; servingsInput.value=""; render(); });
-servingsInput.addEventListener("input", render);
-buyToggle.addEventListener("change", render);
-
-const locBtn = document.getElementById("locBtn");
-
-if (locBtn && navigator.geolocation) {
-  locBtn.addEventListener("click", () => {
-    navigator.geolocation.getCurrentPosition(pos => {
-      const { latitude: lat, longitude: lon } = pos.coords;
-
-      const REGION_FACTORS = [
-        { name: "Northeast", factor: 1.06, box: [[-82, 36], [-66, 47]] },
-        { name: "Southeast", factor: 0.96, box: [[-91, 24], [-75, 36]] },
-        { name: "Midwest",   factor: 0.98, box: [[-104, 36], [-82, 49]] },
-        { name: "Southwest", factor: 1.00, box: [[-115, 25], [-95, 37]] },
-        { name: "West",      factor: 1.08, box: [[-125, 32], [-114, 49]] }
-      ];
-
-      const hit = REGION_FACTORS.find(r => {
-        const [[minLon, minLat], [maxLon, maxLat]] = [r.box[0], r.box[1]];
-        return lon >= minLon && lon <= maxLon && lat >= minLat && lat <= maxLat;
-      });
-
-      if (hit) {
-        REGION = { name: hit.name, factor: hit.factor };
-        regionNote.textContent = `Using ${hit.name} regional average`;
-        regionBadge.style.display = "inline-block";
-        regionBadge.textContent = "Regional";
-        priceNote.textContent = `Prices adjusted using ${hit.name} regional averages.`;
-      } else {
-        REGION = { name: "National", factor: 1.00 };
-        regionNote.textContent = "Using national average";
-        regionBadge.style.display = "none";
-        priceNote.textContent = "Prices use national grocery averages. Actual costs may vary by store and region.`;
+    if(gFrom === "volume" && gBase === "volume"){
+      const toFlOz = {
+        "tsp": 1/6,
+        "teaspoon": 1/6,
+        "tbsp": 0.5,
+        "tablespoon":0.5,
+        "fl oz":1,
+        "fluid ounce":1,
+        "cup":8,
+        "pint":16,
+        "quart":32,
+        "ml": 1/29.5735,
+        "milliliter":1/29.5735,
+        "liter":33.814,
+        "l":33.814
+      };
+      const fromFl = toFlOz[fromUnit];
+      const baseFl = toFlOz[baseUnit];
+      if(fromFl && baseFl){
+        return qty * fromFl / baseFl;
       }
-
-      totalRow.classList.remove("flash");
-      void totalRow.offsetWidth;
-      totalRow.classList.add("flash");
-      render();
-    }, () => {
-      regionNote.textContent = "Location permission declined";
-    }, { timeout: 8000 });
-  });
-}
-
-async function tryMergeExternal(){
-  try{
-    const rj = await fetch("./data/ingredients.json", {cache:"no-store"});
-    if(rj.ok){ const extra = await rj.json(); Object.assign(DATA, extra); }
-  }catch{}
-  try{
-    const rc = await fetch("./data/ingredients.csv", {cache:"no-store"});
-    if(!rc.ok) return;
-    const text = await rc.text();
-    const lines = text.split(/\r?\n/).filter(Boolean);
-    const hdr = lines.shift().split(",").map(s=>s.trim());
-    const idx = {key:hdr.indexOf("key"), label:hdr.indexOf("label"), baseUnit:hdr.indexOf("baseUnit"),
-                 pricePerBase:hdr.indexOf("pricePerBase"), cupOz:hdr.indexOf("cupOz"),
-                 packSize:hdr.indexOf("packSize"), packUnit:hdr.indexOf("packUnit")};
-    lines.forEach(line=>{
-      const parts = line.split(",");
-      if(parts.length < 4) return;
-      const key = (parts[idx.key]||"").trim().toLowerCase();
-      if(!key) return;
-      const label = (parts[idx.label]||"").trim() || key;
-      const baseUnit = (parts[idx.baseUnit]||"").trim();
-      const pricePerBase = Number((parts[idx.pricePerBase]||"0").trim()) || 0;
-      const cupOz = Number((parts[idx.cupOz]||"").trim()) || undefined;
-      const packSize = Number((parts[idx.packSize]||"").trim()) || undefined;
-      const packUnit = (parts[idx.packUnit]||"").trim() || undefined;
-      DATA[key] = DATA[key] || {label, baseUnit, pricePerBase, conversions:{}};
-      DATA[key].label = label; DATA[key].baseUnit = baseUnit; DATA[key].pricePerBase = pricePerBase;
-      if(cupOz){ DATA[key].cupOz = cupOz; }
-      if(packSize && packUnit){ DATA[key].packSize = packSize; DATA[key].packUnit = packUnit; }
-    });
-  }catch{}
-}
-
-// === Kroger backend wiring (front-end only) ===
-const KROGER_BACKEND = "https://tabella-kroger-backend.vercel.app";
-
-function applyStoreMode(labelText){
-  REGION = { name:"Store", factor:1.00 };
-  regionBadge.style.display = "inline-block";
-  regionBadge.textContent = "Store";
-  if(labelText){
-    regionNote.textContent = `Using prices from ${labelText}`;
-  }else{
-    regionNote.textContent = "Using store prices";
-  }
-  priceNote.textContent = "Prices based on your selected store. Actual costs may vary by store and region.";
-  totalRow.classList.remove("flash"); void totalRow.offsetWidth; totalRow.classList.add("flash");
-}
-
-// Call /api/stores when ZIP is chosen
-async function fetchStoresByZip(zip){
-  storeError.textContent = "";
-  if(!zip){
-    storeError.textContent = "Enter a ZIP code first.";
-    return;
-  }
-  storeSelect.innerHTML = '<option value="">Loading stores…</option>';
-  try{
-    const res = await fetch(`${KROGER_BACKEND}/api/stores?zip=${encodeURIComponent(zip)}`);
-    if(!res.ok){
-      throw new Error("Store lookup failed: " + res.status);
     }
-    const data = await res.json();
-    const stores = Array.isArray(data.stores) ? data.stores : data;
 
-    storeSelect.innerHTML = "";
-    if(!stores || !stores.length){
-      const opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = "No nearby stores found";
-      storeSelect.appendChild(opt);
-      storeError.textContent = "No nearby stores found for that ZIP.";
+    if(gFrom === "weight" && gBase === "weight"){
+      const toOz = {
+        "oz":1,
+        "ounce":1,
+        "lb":16,
+        "pound":16,
+        "g":1/28.3495,
+        "gram":1/28.3495,
+        "kg":35.274,
+        "kilogram":35.274
+      };
+      const fromOz = toOz[fromUnit];
+      const baseOz = toOz[baseUnit];
+      if(fromOz && baseOz){
+        return qty * fromOz / baseOz;
+      }
+    }
+
+    // volume to weight conversion using cupOz when we have it
+    if(gFrom === "volume" && gBase === "weight"){
+      const cupOz = (ing && ing.cupOz) ? ing.cupOz : genericCupOzFor("weight");
+      if(!cupOz) return NaN;
+      const cups = convertToBaseQty(qty, fromUnit, "cup", ing);
+      if(isNaN(cups)) return NaN;
+      const ozTotal = cups * cupOz;
+      const weightInBase = convertToBaseQty(ozTotal, "oz", baseUnit, ing);
+      return weightInBase;
+    }
+
+    // weight to volume (rare; use inverse if we have cupOz)
+    if(gFrom === "weight" && gBase === "volume"){
+      const cupOz = (ing && ing.cupOz) ? ing.cupOz : genericCupOzFor("weight");
+      if(!cupOz) return NaN;
+      const ozInFrom = convertToBaseQty(qty, fromUnit, "oz", ing);
+      if(isNaN(ozInFrom)) return NaN;
+      const cups = ozInFrom / cupOz;
+      const volInBase = convertToBaseQty(cups, "cup", baseUnit, ing);
+      return volInBase;
+    }
+
+    if(gFrom === "each" && gBase === "each"){
+      return qty;
+    }
+
+    return NaN;
+  }
+
+  function money(n){
+    if(!isFinite(n)) return "$0.00";
+    const s = n.toFixed(2);
+    return "$" + s.replace(/\B(?=(\d{3})+(?!\d))/g,",");
+  }
+
+  // === Ingredient suggestions ===
+  function seedIng(){
+    if(!ingredientsLoaded) return;
+    if(!ingredientInput) return;
+    ingredientInput.setAttribute("placeholder","Start typing (e.g., flour, sugar, milk)");
+  }
+
+  function seedUnits(){
+    if(!unitInput) return;
+    unitInput.value = "cup";
+  }
+
+  function findIngredientMatch(query){
+    if(!ingredientsLoaded) return null;
+    if(!query) return null;
+    const q = query.trim().toLowerCase();
+    if(!q) return null;
+
+    let exactKey = null;
+    for(const k of INGREDIENT_KEYS){
+      const ing = INGREDIENT_DATA[k];
+      if(ing.key.toLowerCase() === q || ing.label.toLowerCase() === q){
+        exactKey = k;
+        break;
+      }
+    }
+    if(exactKey) return INGREDIENT_DATA[exactKey];
+
+    const hitKey = INGREDIENT_KEYS.find(k=>{
+      const ing = INGREDIENT_DATA[k];
+      return ing.label.toLowerCase().startsWith(q);
+    });
+    if(hitKey) return INGREDIENT_DATA[hitKey];
+
+    return null;
+  }
+
+  function renderSuggestions(){
+    if(!ingredientsLoaded) return;
+    const q = ingredientInput.value.trim().toLowerCase();
+    if(!q){
+      ingHelp.style.display = "block";
+      ingError.style.display = "none";
+      return;
+    }
+    const matches = INGREDIENT_KEYS
+      .map(k=>INGREDIENT_DATA[k])
+      .filter(ing=>ing.label.toLowerCase().includes(q))
+      .slice(0,8);
+
+    if(matches.length === 0){
+      ingHelp.style.display = "none";
+      ingError.style.display = "block";
+      ingError.textContent = "No ingredients found. Try a simpler name like 'flour' or 'milk'.";
+    }else{
+      ingHelp.style.display = "block";
+      ingError.style.display = "none";
+      const names = matches.map(m=>m.label).join(", ");
+      ingHelp.textContent = "Suggestions: " + names;
+    }
+  }
+
+  // === Row handling ===
+  function addRow(){
+    const ingName = ingredientInput.value.trim();
+    const qtyStr  = qtyInput.value;
+    const unitStr = unitInput.value;
+
+    const qty = parseQty(qtyStr);
+    if(isNaN(qty) || qty<=0){
+      alert("Please enter a valid quantity.");
       return;
     }
 
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "Choose a store";
-    storeSelect.appendChild(placeholder);
-
-    stores.forEach(store => {
-      const opt = document.createElement("option");
-      const id = store.id || store.storeId || store.locationId;
-      opt.value = id;
-      const name = store.name || store.description || "Store";
-      const city = store.city || (store.address && store.address.city) || "";
-      opt.textContent = city ? `${name} (${city})` : name;
-      opt.dataset.label = opt.textContent;
-      storeSelect.appendChild(opt);
-    });
-  }catch(err){
-    console.error(err);
-    storeError.textContent = "Could not load store list. Please try again.";
-    storeSelect.innerHTML = '<option value="">No store selected</option>';
-  }
-}
-
-// Call /api/prices with current ingredient list
-async function fetchStorePrices(){
-  storeError.textContent = "";
-  const storeId = storeSelect.value;
-  if(!storeId){
-    storeError.textContent = "Select a store first.";
-    return;
-  }
-  if(!rows.length){
-    storeError.textContent = "Add at least one ingredient to estimate prices.";
-    return;
-  }
-
-  const items = rows.map(r => ({
-    key: r.key,
-    name: r.label,
-    qty: r.qtyForBackend,
-    unit: r.unitForBackend
-  }));
-
-  try{
-    const res = await fetch(`${KROGER_BACKEND}/api/prices`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ storeId, items })
-    });
-    if(!res.ok){
-      throw new Error("Price lookup failed: " + res.status);
-    }
-    const data = await res.json();
-    const priceItems = Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []);
-
-    // Update line costs from backend
-    priceItems.forEach(pi => {
-      const key = pi.key || (pi.ingredient && pi.ingredient.key);
-      const name = (pi.name || (pi.ingredient && pi.ingredient.name) || "").toLowerCase();
-      let target = null;
-      if(key){
-        target = rows.find(r => r.key === key);
-      }
-      if(!target && name){
-        target = rows.find(r => r.label.toLowerCase() === name);
-      }
-      const lineTotal =
-        typeof pi.lineTotal === "number" ? pi.lineTotal :
-        typeof pi.totalPrice === "number" ? pi.totalPrice :
-        typeof pi.total === "number" ? pi.total :
-        typeof pi.price === "number" ? pi.price :
-        null;
-      if(target != null && lineTotal != null){
-        target.lineCost = lineTotal;
-      }
-    });
-
-    // Optional totals block from backend
-    if(data.totals && typeof data.totals.recipeTotal === "number"){
-      const t = data.totals.recipeTotal;
-      totalCell.textContent = fmt(t);
-      totalVal.textContent = fmt(t);
-      const s = Number(servingsInput.value);
-      if(isFinite(s) && s>0){
-        perServingEl.style.display="";
-        perServingEl.textContent = `Per-serving: ${fmt(t/s)}`;
-      }else{
-        perServingEl.style.display="none";
-      }
-      if(buyToggle.checked){
-        const scratch = typeof data.totals.scratchTotal === "number" ? data.totals.scratchTotal : t;
-        buyTotalEl.style.display="";
-        buyTotalEl.textContent = `If buying from scratch: ${fmt(scratch)}`;
-      }
-    }else{
-      render();
+    const ing = findIngredientMatch(ingName);
+    if(!ing){
+      alert("Please choose an ingredient from the suggestions (for example 'All-Purpose Flour').");
+      return;
     }
 
-    const selectedOpt = storeSelect.options[storeSelect.selectedIndex];
-    const labelText = selectedOpt ? (selectedOpt.dataset.label || selectedOpt.textContent) : "";
-    applyStoreMode(labelText);
-  }catch(err){
-    console.error(err);
-    storeError.textContent = "Could not load store prices. Using averages instead.";
+    const unitNorm = normalizeUnit(unitStr || ing.baseUnit || "cup");
+
+    const baseUnit = ing.baseUnit || unitNorm;
+    const baseQty  = convertToBaseQty(qty, unitNorm, baseUnit, ing);
+
+    const perBase  = ing.pricePerBase || 0;
+    const lineCost = isNaN(baseQty) ? 0 : baseQty * perBase;
+
+    rows.push({
+      key: ing.key,
+      label: ing.label,
+      qty,
+      unit: unitNorm,
+      baseQty,
+      baseUnit,
+      lineCost
+    });
+
+    ingredientInput.value = "";
+    qtyInput.value = "1";
+    unitInput.value = unitNorm;
     render();
   }
-}
 
-// ZIP and store events
-findStoresBtn.addEventListener("click", () => {
-  const zip = (zipInput.value || "").trim();
-  fetchStoresByZip(zip);
-});
-
-zipInput.addEventListener("keyup", (e) => {
-  if(e.key === "Enter"){
-    const zip = (zipInput.value || "").trim();
-    fetchStoresByZip(zip);
+  function removeRow(idx){
+    rows.splice(idx,1);
+    render();
   }
-});
 
-storePricesBtn.addEventListener("click", () => {
-  fetchStorePrices();
-});
+  function computeTotal(){
+    let total = 0;
+    for(const r of rows){
+      const ing = INGREDIENT_DATA[r.key] || {};
+      const perBase = (useStorePricing ? (STORE_ING[r.key]?.pricePerBase ?? ing.pricePerBase) : ing.pricePerBase) || 0;
+      const baseQty = isNaN(r.baseQty) ? 0 : r.baseQty;
+      total += baseQty * perBase;
+    }
+    if(REGION && REGION.factor){
+      total = total * REGION.factor;
+    }
+    return total;
+  }
 
-storeSelect.addEventListener("change", () => {
-  storeError.textContent = "";
-});
+  function render(){
+    lineItemsBody.innerHTML = "";
+    rows.forEach((r,idx)=>{
+      const tr = document.createElement("tr");
 
-// Optional helper you already had for manual testing
-async function dmTestKroger() {
-  const testBody = {
-    storeId: "01400513",
-    items: [
-      { key: "flour", name: "All purpose flour", qty: 2, unit: "cup" },
-      { key: "eggs",  name: "Eggs",              qty: 6, unit: "each" }
-    ]
-  };
+      const tdName  = document.createElement("td");
+      const tdQty   = document.createElement("td");
+      const tdUnit  = document.createElement("td");
+      const tdMoney = document.createElement("td");
 
-  try {
-    const res = await fetch(`${KROGER_BACKEND}/api/prices`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(testBody),
+      tdName.textContent = r.label;
+      tdQty.textContent  = r.qty;
+      tdQty.className    = "qty";
+      tdUnit.textContent = r.unit;
+      tdUnit.className   = "unit";
+      tdMoney.textContent= money(r.lineCost);
+      tdMoney.className  = "money";
+
+      const tdRemove = document.createElement("td");
+      tdRemove.className = "money";
+      const rmBtn = document.createElement("button");
+      rmBtn.textContent = "x";
+      rmBtn.className = "btn-plain";
+      rmBtn.style.fontSize = "12px";
+      rmBtn.addEventListener("click", ()=>removeRow(idx));
+      tdRemove.appendChild(rmBtn);
+
+      tr.appendChild(tdName);
+      tr.appendChild(tdQty);
+      tr.appendChild(tdUnit);
+      tr.appendChild(tdMoney);
+
+      lineItemsBody.appendChild(tr);
     });
 
-    const data = await res.json();
-    console.log("Kroger test pricing", data);
-    alert("Kroger test pricing:\n" + JSON.stringify(data, null, 2));
-  } catch (err) {
-    console.error("Kroger test failed", err);
-    alert("Kroger test failed: " + err);
-  }
-}
-// === end Kroger backend wiring ===
+    const total = computeTotal();
+    totalCell.textContent = money(total);
+    resultsTotal.textContent = money(total);
 
-(async function init(){
-  if(!window.SHOW_INTERNAL_HEADER){ const h=document.getElementById("internalHeader"); if(h) h.style.display="none"; }
-  await tryMergeExternal();
-  seedIng(); seedUnits(); render();
-})();
+    if(rows.length === 0){
+      resultsLabel.textContent = "Total recipe cost";
+      perServingKicker.textContent = "";
+    }else{
+      if(servings && servings>0){
+        const perServ = total / servings;
+        resultsLabel.textContent = "Total recipe cost";
+        perServingKicker.textContent = "About " + money(perServ) + " per serving.";
+      }else{
+        resultsLabel.textContent = "Total recipe cost";
+        perServingKicker.textContent = "";
+      }
+    }
+
+    summaryPills.innerHTML = "";
+    if(rows.length){
+      const pill1 = document.createElement("div");
+      pill1.className="pill";
+      pill1.innerHTML = "<strong>"+rows.length+"</strong> ingredients";
+      summaryPills.appendChild(pill1);
+
+      if(servings && servings>0){
+        const pill2 = document.createElement("div");
+        pill2.className="pill";
+        pill2.innerHTML = "<strong>"+servings+"</strong> servings";
+        summaryPills.appendChild(pill2);
+      }
+
+      const pill3 = document.createElement("div");
+      pill3.className="pill";
+      pill3.innerHTML = "<strong>"+REGION.name+"</strong> pricing";
+      summaryPills.appendChild(pill3);
+
+      if(useStorePricing){
+        const pill4 = document.createElement("div");
+        pill4.className="pill";
+        pill4.innerHTML = "<strong>Store data</strong> applied";
+        summaryPills.appendChild(pill4);
+      }
+    }
+  }
+
+  // === Event wiring (core) ===
+  addBtn.addEventListener("click", addRow);
+  ingredientInput.addEventListener("input", renderSuggestions);
+  ingredientInput.addEventListener("blur", ()=>setTimeout(()=>{ ingHelp.style.display="none"; ingError.style.display="none"; },200));
+  qtyInput.addEventListener("keyup", e=>{ if(e.key === "Enter") addRow(); });
+  unitInput.addEventListener("keyup", e=>{ if(e.key === "Enter") addRow(); });
+
+  servingsInput.addEventListener("input", ()=>{
+    const v = parseInt(servingsInput.value,10);
+    if(isNaN(v) || v<=0){ servings = null; }
+    else{ servings = v; }
+    render();
+  });
+
+  resetAllBtn.addEventListener("click", ()=>{
+    rows = [];
+    servingsInput.value = "";
+    servings = null;
+    REGION = { name:"National", factor:1.00 };
+    useStorePricing = false;
+    regionBadge.style.display="none";
+    regionNote.textContent = "Using national grocery averages.";
+    priceNote.textContent = "Prices use national grocery averages. Actual costs may vary by store and region.";
+    render();
+  });
+
+  // === Region via geolocation (for now; safe-guarded) ===
+  if(locBtn && navigator.geolocation){
+    locBtn.addEventListener("click", ()=>{
+      navigator.geolocation.getCurrentPosition(pos=>{
+        const { latitude:lat, longitude:lon } = pos.coords;
+        const REGION_FACTORS = [
+          { name:"Northeast", factor:1.06, box:[[-82,36],[-66,47]]},
+          { name:"Southeast", factor:0.96, box:[[-91,24],[-75,36]]},
+          { name:"Midwest",   factor:0.98, box:[[-104,36],[-82,49]]},
+          { name:"Southwest", factor:1.00, box:[[-115,25],[-95,37]]},
+          { name:"West",      factor:1.08, box:[[-125,32],[-114,49]]}
+        ];
+        const hit = REGION_FACTORS.find(r=>{
+          const [[minLon,minLat],[maxLon,maxLat]] = [r.box[0], r.box[1]];
+          return lon>=minLon && lon<=maxLon && lat>=minLat && lat<=maxLat;
+        });
+        if(hit){
+          REGION = { name:hit.name, factor:hit.factor };
+          regionNote.textContent = `Using ${hit.name} regional average`;
+          regionBadge.style.display = "inline-block";
+          regionBadge.textContent = "Regional";
+          priceNote.textContent = `Prices adjusted using ${hit.name} regional averages.`;
+        }else{
+          REGION = { name:"National", factor:1.00 };
+          regionNote.textContent = "Using national average";
+          regionBadge.style.display = "none";
+          priceNote.textContent = "Prices use national grocery averages. Actual costs may vary by store and region.";
+        }
+        totalRow.classList.remove("flash"); void totalRow.offsetWidth; totalRow.classList.add("flash");
+        render();
+      }, ()=>{
+        regionNote.textContent = "Location permission declined";
+      }, { timeout:8000 });
+    });
+  }
+
+  // === Kroger-style external data wiring (stub for now) ===
+  async function tryMergeExternal(){
+    try{
+      const rc = await fetch("./data/ingredients.csv", {cache:"no-store"});
+      if(!rc.ok) return;
+      const text = await rc.text();
+
+      const lines = text.split(/\r?\n/).filter(l=>l.trim());
+      if(lines.length < 2) return;
+
+      const hdr = lines[0].split(",").map(h=>h.trim().toLowerCase());
+
+      const idx = {
+        key:       hdr.indexOf("key"),
+        label:     hdr.indexOf("label"),
+        baseUnit:  hdr.indexOf("baseunit"),
+        pricePerBase: hdr.indexOf("priceperbase"),
+        cupOz:     hdr.indexOf("cupoz"),
+        packSize:  hdr.indexOf("packsize"),
+        packUnit:  hdr.indexOf("packunit")
+      };
+
+      lines.slice(1).forEach(row=>{
+        const cols = row.split(",").map(c=>c.trim());
+        if(!cols.length) return;
+
+        const key   = cols[idx.key] || "";
+        if(!key) return;
+
+        const label = cols[idx.label] || key.replace(/_/g," ").replace(/\s+/g," ").replace(/\b\w/g,ch=>ch.toUpperCase());
+        const baseUnit = cols[idx.baseUnit] || "lb";
+        const pricePerBase = parseFloat(cols[idx.pricePerBase] || "0") || 0;
+        const cupOz  = parseFloat(cols[idx.cupOz] || "0") || 0;
+        const packSize = parseFloat(cols[idx.packSize] || "0") || 0;
+        const packUnit = cols[idx.packUnit] || "";
+
+        INGREDIENT_DATA[key] = {
+          key,
+          label,
+          baseUnit,
+          pricePerBase,
+          cupOz: cupOz || null,
+          packSize: packSize || null,
+          packUnit: packUnit || null
+        };
+      });
+
+      INGREDIENT_KEYS = Object.keys(INGREDIENT_DATA).sort((a,b)=>{
+        const la = INGREDIENT_DATA[a].label.toLowerCase();
+        const lb = INGREDIENT_DATA[b].label.toLowerCase();
+        return la.localeCompare(lb);
+      });
+
+      ingredientsLoaded = true;
+    }catch(err){
+      console.error("Failed to load ingredients.csv", err);
+    }
+  }
+
+  (async function init(){
+    if(!window.SHOW_INTERNAL_HEADER){
+      const h = document.getElementById("internalHeader");
+      if(h) h.style.display="none";
+    }
+    await tryMergeExternal();
+    seedIng();
+    seedUnits();
+    render();
+  })();
 </script>
 </body>
 </html>
