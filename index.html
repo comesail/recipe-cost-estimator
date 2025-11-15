@@ -31,7 +31,7 @@
   .sub{color:#333;margin:0 0 10px;font-size:18px;font-weight:300;} .sub strong{font-weight:600;}
   .muted{color:var(--muted);font-size:13px;} .tiny{font-size:12px;}
   label{display:block;font-size:13px;color:#222;margin:0 0 6px;font-weight:300;}
-  input,button,select{ font:inherit;border-radius:0;border:1px solid var(--line);padding:10px 12px;width:100%;box-sizing:border-box;background:#fff;color:var(--text); }
+  input,button{ font:inherit;border-radius:0;border:1px solid var(--line);padding:10px 12px;width:100%;box-sizing:border-box;background:#fff;color:var(--text); }
   input[type="number"]{appearance:textfield;}
   input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{appearance:none;margin:0;}
   .row{display:grid;grid-template-columns:2.5fr 1fr 1.2fr auto;gap:10px;align-items:end;}
@@ -43,10 +43,11 @@
   .right{text-align:right;}
   .results-grid{display:grid; grid-template-columns: 1fr 320px; gap:24px; align-items:start;}
   .results-right{border-left:1px solid var(--line); padding-left:18px;}
-  .pill-btn{ border-radius:999px; padding:10px 16px; border:2px solid var(--blue); background:#fff; color:var(--blue); font-weight:600; cursor:pointer; width:auto; }
+  .pill-btn{ border-radius:999px; padding:10px 16px; border:2px solid var(--blue); background:#fff; color:var(--blue); font-weight:600; cursor:pointer; }
   .pill-btn:hover{filter:brightness(.97);}
   .total{font-size:18px; display:flex; align-items:center; gap:8px;} .amount{font-weight:600;} .badge{border:1px solid var(--line); padding:2px 6px; font-size:11px; color:#1f66c1;}
   .pill{border:1px solid var(--line);padding:10px 12px;} .flash{animation:flash 900ms ease;} @keyframes flash{0%{background:var(--flash);} 100%{background:transparent;}}
+  .results-right .tiny{line-height:1.5;}
   @media (max-width:900px){ .results-grid{grid-template-columns:1fr;} .results-right{border-left:none; padding-left:0;} }
   @media (max-width:800px){ .row{grid-template-columns:1fr;} }
 </style>
@@ -128,25 +129,10 @@
       </div>
 
       <div class="results-right">
-        <div class="tiny muted" style="margin-bottom:6px;"><strong>Optional</strong> — For a more accurate estimate, use my location.</div>
-        <button class="pill-btn" id="locBtn" type="button">Use my location</button>
+        <div class="tiny muted" style="margin-bottom:6px;">
+          Prices are based on Kroger national-average pricing from a representative Tampa, FL store. Location is not required.
+        </div>
         <div class="muted tiny" id="regionNote" style="margin-top:8px;"></div>
-
-        <!-- New: ZIP + store selection wired to Kroger backend -->
-        <div class="tiny muted" style="margin-top:14px;">Or enter ZIP and choose a nearby store.</div>
-        <div class="controls-inline" style="margin-top:6px;">
-          <input id="zipInput" placeholder="ZIP" style="max-width:120px;">
-          <button class="pill-btn" id="findStoresBtn" type="button" style="padding:8px 12px;font-size:12px;">Find stores</button>
-        </div>
-        <div style="margin-top:8px;">
-          <select id="storeSelect" style="width:100%;max-width:100%;padding:8px 10px;border-radius:999px;border:1px solid var(--line);font-size:13px;">
-            <option value="">No store selected</option>
-          </select>
-        </div>
-        <div class="controls-inline" style="margin-top:6px;">
-          <button class="pill-btn" id="storePricesBtn" type="button" style="padding:8px 12px;font-size:12px;">Use store prices</button>
-        </div>
-        <div class="tiny muted" id="storeError" style="margin-top:6px;"></div>
       </div>
     </div>
   </section>
@@ -250,27 +236,10 @@ const buyToggle = document.getElementById("buyToggle");
 const buyTotalEl = document.getElementById("buyTotal");
 const leftoversList = document.getElementById("leftoversList");
 
-// New DOM refs for store wiring
-const zipInput = document.getElementById("zipInput");
-const findStoresBtn = document.getElementById("findStoresBtn");
-const storeSelect = document.getElementById("storeSelect");
-const storePricesBtn = document.getElementById("storePricesBtn");
-const storeError = document.getElementById("storeError");
-
 function seedIng(){
-  ingList.innerHTML = "";
+  ingList.innerHTML="";
   Object.keys(DATA).sort().forEach(k=>{
-    const item = DATA[k];
-    if(!item) return;
-
-    const o = document.createElement("option");
-    // Show human-friendly name in the dropdown
-    o.value = item.label || k;
-    o.label = item.label || k;
-    // Remember the key so we can map back if needed
-    o.dataset.key = k;
-
-    ingList.appendChild(o);
+    const o=document.createElement("option"); o.value=k; o.label=DATA[k].label; ingList.appendChild(o);
   });
 }
 function seedUnits(){
@@ -336,6 +305,7 @@ function render(){
   }else{
     buyTotalEl.style.display="none"; leftoversList.style.display="none"; leftoversList.innerHTML="";
   }
+  scheduleKrogerRefresh();
 }
 
 function formatQty(q, unit){
@@ -344,155 +314,42 @@ function formatQty(q, unit){
 }
 
 function toBaseFactor(item, unitRaw, qtyRaw){
-  const unit = normalizeUnit(unitRaw);
-  const base = normalizeUnit(item.baseUnit || "");
-  const conv = item.conversions || {};
-
-  // Special handling for "2x28 oz" style cans
-  if(unit === "can"){
-    let cans = 1;
-    let ozPerCan = 15;
-    const q = parseQuantity(qtyRaw);
-    if(typeof q === "object" && q.type === "x"){ cans = q.n; ozPerCan = q.m; }
-    else if(isFinite(q)){ cans = q; }
+  const unit=unitRaw.toLowerCase();
+  const conv=item.conversions||{};
+  if(unit==="cup" && item.cupOz && (item.baseUnit==="oz" || item.baseUnit==="lb")){
+    const oz = item.cupOz;
+    if(item.baseUnit==="oz"){ return {factor:oz, qtyDisplay:qtyRaw, unitDisplay:"cup"}; }
+    if(item.baseUnit==="lb"){ return {factor:oz/16, qtyDisplay:qtyRaw, unitDisplay:"cup"}; }
+  }
+  if(conv[unit]!=null) return {factor:conv[unit], qtyDisplay:qtyRaw, unitDisplay:UNIT_LABELS[unit]||unit};
+  if(unit==="can"){
+    let cans=1, ozPerCan=15;
+    const q=parseQuantity(qtyRaw);
+    if(typeof q==="object" && q.type==="x"){ cans=q.n; ozPerCan=q.m; }
+    else if(isFinite(q)){ cans=q; }
     const displayQty = `${cans} × ${ozPerCan} oz`;
     const displayUnit = `can (oz)`;
-    if(base === "lb"){ return { factor: (cans * ozPerCan) / 16, qtyDisplay: displayQty, unitDisplay: displayUnit }; }
-    if(base === "oz"){ return { factor: (cans * ozPerCan),       qtyDisplay: displayQty, unitDisplay: displayUnit }; }
+    if(item.baseUnit==="lb"){ return {factor:(cans*ozPerCan)/16, qtyDisplay:displayQty, unitDisplay:displayUnit}; }
+    if(item.baseUnit==="oz"){ return {factor:(cans*ozPerCan),        qtyDisplay:displayQty, unitDisplay:displayUnit}; }
   }
-
-  // Direct per-item conversion table (from DATA / CSV)
-  if(conv[unit] != null){
-    return {
-      factor: conv[unit],
-      qtyDisplay: qtyRaw,
-      unitDisplay: UNIT_LABELS[unit] || unit
-    };
+  if(item.baseUnit==="lb"){
+    if(unit==="oz") return {factor:1/16, qtyDisplay:qtyRaw, unitDisplay:UNIT_LABELS[unit]||unit};
+    if(unit==="g")  return {factor:1/453.592, qtyDisplay:qtyRaw, unitDisplay:UNIT_LABELS[unit]||unit};
+    if(unit==="kg") return {factor:2.20462, qtyDisplay:qtyRaw, unitDisplay:UNIT_LABELS[unit]||unit};
   }
-
-  // Families for generic conversions
-  const weightUnits = { lb:1, oz:1, g:1, kg:1 };
-  const volumeUnits = { cup:1, tbsp:1, tsp:1, "fl oz":1, ml:1, l:1 };
-
-  function genericFactor(u){
-    if(!u) return null;
-    u = normalizeUnit(u);
-
-    // If unit already matches base
-    if(u === base) return 1;
-
-    // If we have cupOz and we are bridging volume -> weight
-    if(item.cupOz && weightUnits[base] && volumeUnits[u]){
-      let cups = null;
-      if(u === "cup") cups = 1;
-      else if(u === "tbsp") cups = 1/16;
-      else if(u === "tsp") cups = 1/48;
-      else if(u === "fl oz") cups = 1/8;
-      else if(u === "ml") cups = 1/240;
-      else if(u === "l") cups = 1000/240;
-
-      if(cups != null){
-        const oz = cups * item.cupOz;
-        if(base === "oz") return oz;
-        if(base === "lb") return oz / 16;
-        if(base === "g")  return oz * 28.3495;
-        if(base === "kg") return (oz * 28.3495) / 1000;
-      }
-    }
-
-    // Generic weight family conversions (no density assumptions)
-    if(weightUnits[base] && weightUnits[u]){
-      let lbsFromU = null;
-      if(u === "lb") lbsFromU = 1;
-      else if(u === "oz") lbsFromU = 1/16;
-      else if(u === "g") lbsFromU = 1/453.592;
-      else if(u === "kg") lbsFromU = 2.20462;
-
-      if(lbsFromU != null){
-        if(base === "lb") return lbsFromU;
-        if(base === "oz") return lbsFromU * 16;
-        if(base === "g")  return lbsFromU * 453.592;
-        if(base === "kg") return lbsFromU / 2.20462;
-      }
-    }
-
-    // Generic volume family conversions (pure volume)
-    if(volumeUnits[base] && volumeUnits[u]){
-      let cups = null;
-      if(u === "cup") cups = 1;
-      else if(u === "tbsp") cups = 1/16;
-      else if(u === "tsp") cups = 1/48;
-      else if(u === "fl oz") cups = 1/8;
-      else if(u === "ml") cups = 1/240;
-      else if(u === "l") cups = 1000/240;
-
-      if(cups != null){
-        if(base === "cup")   return cups;
-        if(base === "tbsp")  return cups * 16;
-        if(base === "tsp")   return cups * 48;
-        if(base === "fl oz") return cups * 8;
-        if(base === "ml")    return cups * 240;
-        if(base === "l")     return (cups * 240) / 1000;
-      }
-    }
-
-    // Fallback: approximate volume -> weight when we have no cupOz
-    if(!item.cupOz && weightUnits[base] && volumeUnits[u]){
-      const assumedOzPerCup = 8; // safe midline fallback
-      let cups = null;
-      if(u === "cup") cups = 1;
-      else if(u === "tbsp") cups = 1/16;
-      else if(u === "tsp") cups = 1/48;
-      else if(u === "fl oz") cups = 1/8;
-      else if(u === "ml") cups = 1/240;
-      else if(u === "l") cups = 1000/240;
-
-      if(cups != null){
-        const oz = cups * assumedOzPerCup;
-        if(base === "oz") return oz;
-        if(base === "lb") return oz / 16;
-        if(base === "g")  return oz * 28.3495;
-        if(base === "kg") return (oz * 28.3495) / 1000;
-      }
-    }
-
-    // Keep the existing gallon helpers (milk etc.)
-    if(base === "gallon"){
-      if(u === "ml")   return 1/3785.41;
-      if(u === "l")    return 1/3.78541;
-      if(u === "qt")   return 1/4;
-      if(u === "pt")   return 1/8;
-      if(u === "cup")  return 1/16;
-      if(u === "tbsp") return 1/256;
-      if(u === "tsp")  return 1/768;
-      if(u === "fl oz")return 1/128;
-    }
-
-    return null;
+  if(item.baseUnit==="gallon"){
+    if(unit==="ml") return {factor:1/3785.41, qtyDisplay:qtyRaw, unitDisplay:UNIT_LABELS[unit]||unit};
+    if(unit==="l")  return {factor:1/3.78541, qtyDisplay:qtyRaw, unitDisplay:UNIT_LABELS[unit]||unit};
+    if(unit==="qt") return {factor:1/4, qtyDisplay:qtyRaw, unitDisplay:UNIT_LABELS[unit]||unit};
+    if(unit==="pt") return {factor:1/8, qtyDisplay:qtyRaw, unitDisplay:UNIT_LABELS[unit]||unit};
+    if(unit==="cup") return {factor:1/16, qtyDisplay:qtyRaw, unitDisplay:UNIT_LABELS[unit]||unit};
+    if(unit==="tbsp")return {factor:1/256, qtyDisplay:qtyRaw, unitDisplay:UNIT_LABELS[unit]||unit};
+    if(unit==="tsp") return {factor:1/768, qtyDisplay:qtyRaw, unitDisplay:UNIT_LABELS[unit]||unit};
+    if(unit==="fl oz") return {factor:1/128, qtyDisplay:qtyRaw, unitDisplay:UNIT_LABELS[unit]||unit};
   }
-
-  const factor = genericFactor(unit);
-  if(factor != null){
-    return {
-      factor,
-      qtyDisplay: qtyRaw,
-      unitDisplay: UNIT_LABELS[unit] || unit
-    };
-  }
-
-  // Final exact match if nothing else caught it
-  if(unit === base){
-    return {
-      factor: 1,
-      qtyDisplay: qtyRaw,
-      unitDisplay: UNIT_LABELS[unit] || unit
-    };
-  }
-
+  if(unit===item.baseUnit) return {factor:1, qtyDisplay:qtyRaw, unitDisplay:UNIT_LABELS[unit]||unit};
   return null;
 }
-
-
 
 function convertBetweenUnits(qty, srcUnit, dstUnit, item){
   srcUnit = normalizeUnit(srcUnit); dstUnit = normalizeUnit(dstUnit);
@@ -529,131 +386,46 @@ function convertBetweenUnits(qty, srcUnit, dstUnit, item){
 }
 
 document.getElementById("addBtn").addEventListener("click", ()=>{
-  const nameRaw = (ingInput.value || "").trim();
-  const qtyRaw  = (qtyInput.value  || "").trim();
-  const unitRaw = normalizeUnit(unitInput.value || "");
-  if(!nameRaw || !qtyRaw || !unitRaw) return;
+  const keyRaw=(ingInput.value||"").trim().toLowerCase();
+  const qtyRaw=(qtyInput.value||"").trim();
+  const unitRaw=normalizeUnit(unitInput.value||"");
+  if(!keyRaw||!qtyRaw||!unitRaw) return;
 
-  const lower = nameRaw.toLowerCase();
-  let key = null;
-  let item = null;
-
-  // 1) Direct key match (user typed the internal key)
-  if(DATA[lower]){
-    key = lower;
-    item = DATA[lower];
-  } else {
-    // 2) Exact label match
-    const hitLabel = Object.keys(DATA).find(k=>{
-      const it = DATA[k];
-      return (it.label || "").toLowerCase() === lower;
-    });
-    if(hitLabel){
-      key = hitLabel;
-      item = DATA[hitLabel];
-    } else {
-      // 3) Match via datalist option's data-key (user chose from dropdown)
-      const opt = Array.from(ingList.options || []).find(o => o.value === nameRaw && o.dataset.key && DATA[o.dataset.key]);
-      if(opt){
-        key = opt.dataset.key;
-        item = DATA[key];
-      } else {
-        // 4) Loose fallback: substring on key or label
-        const hitLoose = Object.keys(DATA).find(k=>{
-          const it = DATA[k];
-          const lbl = (it.label || "").toLowerCase();
-          return k.includes(lower) || lbl.includes(lower);
-        });
-        if(hitLoose){
-          key = hitLoose;
-          item = DATA[hitLoose];
-        }
-      }
-    }
+  let key=null,item=null;
+  if(DATA[keyRaw]){ key=keyRaw; item=DATA[keyRaw]; }
+  else{
+    const hit=Object.keys(DATA).find(k=>DATA[k].label.toLowerCase()===keyRaw || k.includes(keyRaw));
+    if(hit){ key=hit; item=DATA[hit]; }
   }
+  if(!item){ alert("Ingredient not found in starter list."); return; }
 
-  if(!item){
-    alert("Ingredient not found in ingredient list.");
-    return;
-  }
-
-  const q = parseQuantity(qtyRaw);
+  const q=parseQuantity(qtyRaw);
   let qtyNum;
-  if(typeof q === "object" && q.type === "x"){ qtyNum = q.n; }
-  else if(isFinite(q)){ qtyNum = q; }
-  else {
-    alert("Enter a valid quantity (e.g., 1/2, 1.5, 2, or 2x28).");
-    return;
-  }
+  if(typeof q==="object" && q.type==="x"){ qtyNum=q.n; }
+  else if(isFinite(q)){ qtyNum=q; }
+  else { alert("Enter a valid quantity (e.g., 1/2, 1.5, 2, or 2x28)."); return; }
 
-  const resolved = toBaseFactor(item, unitRaw, qtyRaw);
+  const resolved=toBaseFactor(item, unitRaw, qtyRaw);
   if(!resolved){
-    alert(`Unit "${unitRaw}" is not available for ${item.label} yet.`);
+    const valid=Object.keys(item.conversions||{}).map(u=>UNIT_LABELS[u]||u).join(", ");
+    alert(`Unit "${unitRaw}" not recognized for ${item.label}. Try: ${valid || item.baseUnit}`);
     return;
   }
 
-  const pricePerBase = item.pricePerBase * (REGION.factor || 1);
-  const baseQty = (typeof q === "object" && q.type === "x")
-    ? resolved.factor
-    : qtyNum * resolved.factor;
-  const lineCost = baseQty * pricePerBase;
+  const pricePerBase=item.pricePerBase*(REGION.factor||1);
+  const baseQty=(typeof q==="object" && q.type==="x") ? resolved.factor : qtyNum*resolved.factor;
+  const lineCost=baseQty*pricePerBase;
 
-  const qtyForBackend  = qtyNum;
-  const unitForBackend = unitRaw;
-
-  rows.push({
-    key,
-    label: item.label || nameRaw,
-    qtyDisplay: resolved.qtyDisplay || qtyRaw,
-    unitDisplay: resolved.unitDisplay || (UNIT_LABELS[unitRaw] || unitRaw),
-    baseQty,
-    lineCost,
-    qtyForBackend,
-    unitForBackend
-  });
-
-  ingInput.value = "";
-  qtyInput.value = "";
-  unitInput.value = "";
+  rows.push({ key, label:item.label, qtyDisplay:resolved.qtyDisplay || qtyRaw, unitDisplay:resolved.unitDisplay || (UNIT_LABELS[unitRaw]||unitRaw), baseQty, lineCost });
+  ingInput.value=""; qtyInput.value=""; unitInput.value="";
   render();
 });
-;
 
 document.getElementById("resetAll").addEventListener("click", ()=>{ rows=[]; servingsInput.value=""; render(); });
 servingsInput.addEventListener("input", render);
 buyToggle.addEventListener("change", render);
 
-document.getElementById("locBtn").addEventListener("click", ()=>{
-  if(!navigator.geolocation){ alert("Geolocation not supported on this device."); return; }
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const {latitude:lat, longitude:lon}=pos.coords;
-    const REGION_FACTORS = [
-      {name:"Northeast", factor:1.06, box:[[-82,36],[-66,47]]},
-      {name:"Southeast", factor:0.96, box:[[-91,24],[-75,36]]},
-      {name:"Midwest",   factor:0.98, box:[[-104,36],[-82,49]]},
-      {name:"Southwest", factor:1.00, box:[[-115,25],[-95,37]]},
-      {name:"West",      factor:1.08, box:[[-125,32],[-114,49]]}
-    ];
-    const hit=REGION_FACTORS.find(r=>{
-      const [[minLon,minLat],[maxLon,maxLat]]=[r.box[0],r.box[1]];
-      return lon>=minLon && lon<=maxLon && lat>=minLat && lat<=maxLat;
-    });
-    if(hit){
-      REGION={name:hit.name, factor:hit.factor};
-      regionNote.textContent = `Using ${hit.name} regional average`;
-      regionBadge.style.display="inline-block";
-      regionBadge.textContent = "Regional";
-      priceNote.textContent = `Prices adjusted using ${hit.name} regional averages.`;
-    }else{
-      REGION={name:"National", factor:1.00};
-      regionNote.textContent = "Using national average";
-      regionBadge.style.display="none";
-      priceNote.textContent = "Prices use national grocery averages. Actual costs may vary by store and region.";
-    }
-    totalRow.classList.remove("flash"); void totalRow.offsetWidth; totalRow.classList.add("flash");
-    render();
-  }, ()=>{ regionNote.textContent = "Location permission declined"; }, {timeout:8000});
-});
+/* Geolocation + manual store selection UI removed; pricing now uses a fixed Kroger proxy store for national averages. */
 
 async function tryMergeExternal(){
   try{
@@ -688,201 +460,114 @@ async function tryMergeExternal(){
   }catch{}
 }
 
-// === Kroger backend wiring (front-end only) ===
+// === Kroger backend wiring (fixed national proxy store) ===
 const KROGER_BACKEND = "https://tabella-kroger-backend.vercel.app";
+const KROGER_STORE_ID = "540FC222"; // Tampa, FL proxy store for national-average pricing
 
-function applyStoreMode(labelText){
-  REGION = { name:"Store", factor:1.00 };
-  regionBadge.style.display = "inline-block";
-  regionBadge.textContent = "Store";
-  if(labelText){
-    regionNote.textContent = `Using prices from ${labelText}`;
-  }else{
-    regionNote.textContent = "Using store prices";
+let inKrogerUpdate = false;
+let krogerTimer = null;
+
+/**
+ * Update the UI to reflect that live Kroger prices are in use.
+ */
+function applyKrogerNationalMode(){
+  REGION = { name: "Kroger", factor: 1.00 };
+  if (regionBadge) {
+    regionBadge.style.display = "inline-block";
+    regionBadge.textContent = "Kroger";
   }
-  priceNote.textContent = "Prices based on your selected store. Actual costs may vary by store and region.";
-  totalRow.classList.remove("flash"); void totalRow.offsetWidth; totalRow.classList.add("flash");
-}
-
-// Call /api/stores when ZIP is chosen
-async function fetchStoresByZip(zip){
-  storeError.textContent = "";
-  if(!zip){
-    storeError.textContent = "Enter a ZIP code first.";
-    return;
+  if (regionNote) {
+    regionNote.textContent = "Using Kroger national-average prices (Tampa, FL proxy store).";
   }
-  storeSelect.innerHTML = '<option value="">Loading stores…</option>';
-  try{
-    const res = await fetch(`${KROGER_BACKEND}/api/stores?zip=${encodeURIComponent(zip)}`);
-    if(!res.ok){
-      throw new Error("Store lookup failed: " + res.status);
-    }
-    const data = await res.json();
-    const stores = Array.isArray(data.stores) ? data.stores : data;
-
-    storeSelect.innerHTML = "";
-    if(!stores || !stores.length){
-      const opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = "No nearby stores found";
-      storeSelect.appendChild(opt);
-      storeError.textContent = "No nearby stores found for that ZIP.";
-      return;
-    }
-
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "Choose a store";
-    storeSelect.appendChild(placeholder);
-
-    stores.forEach(store => {
-      const opt = document.createElement("option");
-      const id = store.id || store.storeId || store.locationId;
-      opt.value = id;
-      const name = store.name || store.description || "Store";
-      const city = store.city || (store.address && store.address.city) || "";
-      opt.textContent = city ? `${name} (${city})` : name;
-      opt.dataset.label = opt.textContent;
-      storeSelect.appendChild(opt);
-    });
-  }catch(err){
-    console.error(err);
-    storeError.textContent = "Could not load store list. Please try again.";
-    storeSelect.innerHTML = '<option value="">No store selected</option>';
+  if (priceNote) {
+    priceNote.textContent = "Prices use Kroger national-average prices from a representative Tampa, FL store. Actual costs may vary by store and region.";
+  }
+  if (totalRow) {
+    totalRow.classList.remove("flash");
+    void totalRow.offsetWidth;
+    totalRow.classList.add("flash");
   }
 }
 
-// Call /api/prices with current ingredient list
-async function fetchStorePrices(){
-  storeError.textContent = "";
-  const storeId = storeSelect.value;
-  if(!storeId){
-    storeError.textContent = "Select a store first.";
-    return;
-  }
-  if(!rows.length){
-    storeError.textContent = "Add at least one ingredient to estimate prices.";
-    return;
-  }
+/**
+ * Ask the backend for live prices for all current rows using the fixed store.
+ */
+async function fetchKrogerPricesForAllRows(){
+  if (inKrogerUpdate) return;
+  if (!rows.length) return;
+
+  inKrogerUpdate = true;
 
   const items = rows.map(r => ({
     key: r.key,
     name: r.label,
-    qty: r.qtyForBackend,
-    unit: r.unitForBackend
-  }));
+    qty: r.baseQty || 0,
+    unit: r.unitDisplay || ""
+  ));
 
   try{
     const res = await fetch(`${KROGER_BACKEND}/api/prices`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ storeId, items })
+      body: JSON.stringify({ storeId: KROGER_STORE_ID, items })
     });
-    if(!res.ok){
-      throw new Error("Price lookup failed: " + res.status);
-    }
-    const data = await res.json();
-    const priceItems = Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []);
 
-    // Update line costs from backend
+    if (!res.ok) {
+      console.error("Kroger price lookup failed", res.status);
+      inKrogerUpdate = false;
+      return;
+    }
+
+    const data = await res.json();
+    const priceItems =
+      Array.isArray(data?.pricing) ? data.pricing :
+      Array.isArray(data?.items) ? data.items :
+      (Array.isArray(data) ? data : []);
+
     priceItems.forEach(pi => {
-      const key = pi.key || (pi.ingredient && pi.ingredient.key);
-      const name = (pi.name || (pi.ingredient && pi.ingredient.name) || "").toLowerCase();
+      const key = pi.key || pi.ingredientKey || (pi.ingredient && pi.ingredient.key);
+      const name = (pi.label || pi.name || (pi.ingredient && pi.ingredient.name) || "").toLowerCase();
+
       let target = null;
-      if(key){
+      if (key) {
         target = rows.find(r => r.key === key);
       }
-      if(!target && name){
+      if (!target && name) {
         target = rows.find(r => r.label.toLowerCase() === name);
       }
+      if (!target) return;
+
       const lineTotal =
         typeof pi.lineTotal === "number" ? pi.lineTotal :
         typeof pi.totalPrice === "number" ? pi.totalPrice :
-        typeof pi.total === "number" ? pi.total :
-        typeof pi.price === "number" ? pi.price :
         null;
-      if(target != null && lineTotal != null){
+
+      if (lineTotal != null && isFinite(lineTotal)) {
         target.lineCost = lineTotal;
+      } else if (typeof pi.pricePerBase === "number") {
+        target.lineCost = (target.baseQty || 0) * pi.pricePerBase;
       }
     });
 
-    // Optional totals block from backend
-    if(data.totals && typeof data.totals.recipeTotal === "number"){
-      const t = data.totals.recipeTotal;
-      totalCell.textContent = fmt(t);
-      totalVal.textContent = fmt(t);
-      const s = Number(servingsInput.value);
-      if(isFinite(s) && s>0){
-        perServingEl.style.display="";
-        perServingEl.textContent = `Per-serving: ${fmt(t/s)}`;
-      }else{
-        perServingEl.style.display="none";
-      }
-      if(buyToggle.checked){
-        const scratch = typeof data.totals.scratchTotal === "number" ? data.totals.scratchTotal : t;
-        buyTotalEl.style.display="";
-        buyTotalEl.textContent = `If buying from scratch: ${fmt(scratch)}`;
-      }
-    }else{
-      render();
-    }
-
-    const selectedOpt = storeSelect.options[storeSelect.selectedIndex];
-    const labelText = selectedOpt ? (selectedOpt.dataset.label || selectedOpt.textContent) : "";
-    applyStoreMode(labelText);
-  }catch(err){
-    console.error(err);
-    storeError.textContent = "Could not load store prices. Using averages instead.";
+    applyKrogerNationalMode();
     render();
+  }catch(err){
+    console.error("Kroger price lookup error", err);
+  }finally{
+    inKrogerUpdate = false;
   }
 }
 
-// ZIP and store events
-findStoresBtn.addEventListener("click", () => {
-  const zip = (zipInput.value || "").trim();
-  fetchStoresByZip(zip);
-});
-
-zipInput.addEventListener("keyup", (e) => {
-  if(e.key === "Enter"){
-    const zip = (zipInput.value || "").trim();
-    fetchStoresByZip(zip);
-  }
-});
-
-storePricesBtn.addEventListener("click", () => {
-  fetchStorePrices();
-});
-
-storeSelect.addEventListener("change", () => {
-  storeError.textContent = "";
-});
-
-// Optional helper you already had for manual testing
-async function dmTestKroger() {
-  const testBody = {
-    storeId: "01400513",
-    items: [
-      { key: "flour", name: "All purpose flour", qty: 2, unit: "cup" },
-      { key: "eggs",  name: "Eggs",              qty: 6, unit: "each" }
-    ]
-  };
-
-  try {
-    const res = await fetch(`${KROGER_BACKEND}/api/prices`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(testBody),
-    });
-
-    const data = await res.json();
-    console.log("Kroger test pricing", data);
-    alert("Kroger test pricing:\n" + JSON.stringify(data, null, 2));
-  } catch (err) {
-    console.error("Kroger test failed", err);
-    alert("Kroger test failed: " + err);
-  }
+/**
+ * Debounced helper so we do not hit the Kroger API on every single keystroke.
+ */
+function scheduleKrogerRefresh(){
+  if (inKrogerUpdate) return;
+  if (krogerTimer) clearTimeout(krogerTimer);
+  if (!rows.length) return;
+  krogerTimer = setTimeout(fetchKrogerPricesForAllRows, 700);
 }
+
 // === end Kroger backend wiring ===
 
 (async function init(){
