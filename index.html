@@ -1,83 +1,267 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="utf-8">
 <title>Recipe Cost Estimator</title>
-<meta name="description" content="Estimate total and per-serving cost using simple kitchen units. Type ingredients, amounts, and units — get a clean total and optional per-serving cost.">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;600&display=swap" rel="stylesheet">
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  "name": "Recipe Cost Estimator",
-  "applicationCategory": "FinanceApplication",
-  "operatingSystem": "Web",
-  "publisher": { "@type": "Organization", "name": "Eatonomics" },
-  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "description": "Interactive calculator that estimates total and per-serving recipe cost using common kitchen units."
-}
-</script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-  :root{ --blue:#1f66c1; --text:#111; --muted:#666; --line:#e5e5e5; --bg:#fff; --flash:#e9f2ff; }
-  html,body{margin:0;background:var(--bg);color:var(--text);}
-  body{font-family: system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; font-weight:300;}
-  .wrap{max-width:960px;margin:24px auto 80px;padding:0 16px;}
-  header{margin-bottom:12px;}
-  h1{font-size:28px;margin:0 0 6px;font-weight:300;letter-spacing:.2px;color:var(--blue);}
-  .lede{color:#333;margin:0 0 16px;font-weight:300;}
-  .card{ position:relative; border:1px solid var(--line); border-radius:0; padding:20px 16px 20px 64px; margin:14px 0; }
-  .card::before{ content: attr(data-n); position:absolute; left:8px; top:10px; font-family:'Outfit', Inter, system-ui, sans-serif; font-size:86px; line-height:1; font-weight:200; color:var(--blue); opacity:.10; letter-spacing:.5px; user-select:none; pointer-events:none; z-index:0; }
-  .sub{color:#333;margin:0 0 10px;font-size:18px;font-weight:300;} .sub strong{font-weight:600;}
-  .muted{color:var(--muted);font-size:13px;} .tiny{font-size:12px;}
-  label{display:block;font-size:13px;color:#222;margin:0 0 6px;font-weight:300;}
-  input,button{ font:inherit;border-radius:0;border:1px solid var(--line);padding:10px 12px;width:100%;box-sizing:border-box;background:#fff;color:var(--text); }
-  input[type="number"]{appearance:textfield;}
-  input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{appearance:none;margin:0;}
-  input[type="checkbox"]{width:auto;padding:0;margin-right:4px;}
-  .row{display:grid;grid-template-columns:2.5fr 1fr 1.2fr auto;gap:10px;align-items:end;}
-  .row .btn{width:auto;padding:11px 16px;}
-  .btn{background:var(--blue);color:#fff;border:1px solid var(--blue);cursor:pointer;font-weight:400;} .btn:hover{filter:brightness(.95);}
-  .linkish{border:none;background:none;color:var(--blue);padding:0;cursor:pointer;text-decoration:underline;}
-  .controls-inline{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
-  .stacked-tips{display:flex;flex-direction:column;gap:4px;margin-top:6px;}
-  table{width:100%;border-collapse:collapse;margin-top:12px;}
-  th,td{border-bottom:1px solid var(--line);padding:10px 6px;text-align:left;font-weight:300;}
-  th{color:#222;}
+  :root{ --blue:#1f66c1; --text:#111; --muted:#666; --border:#ddd; --bg:#fafafa; --accent:#e5f0ff; --danger:#c11f3a;}
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    color:var(--text);
+    background:#fff;
+  }
+  main{
+    max-width:900px;
+    margin:0 auto;
+    padding:24px 16px 40px;
+  }
+  h1{
+    font-size:26px;
+    margin:0 0 8px;
+  }
+  p{margin:0 0 10px; line-height:1.5;}
+  .muted{color:var(--muted);font-size:13px;}
+  .tagline{font-size:15px;margin-bottom:18px;}
+  .card{
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:16px 16px 18px;
+    background:var(--bg);
+    margin-bottom:18px;
+  }
+  .card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+  .card-title{font-weight:600;font-size:15px;}
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:4px 9px;
+    border-radius:999px;
+    background:#fff;
+    border:1px solid var(--border);
+    color:var(--muted);
+    font-size:12px;
+  }
+  .pill-dot{
+    width:6px;height:6px;border-radius:999px;background:var(--blue);
+  }
+  label{font-size:13px;display:block;margin-bottom:4px;}
+  input,select,textarea{
+    font-family:inherit;
+    font-size:14px;
+  }
+  input[type="text"],input[type="number"],select,textarea{
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:7px 8px;
+    width:100%;
+  }
+  textarea{resize:vertical;min-height:60px;}
+  .grid{display:grid;gap:10px;}
+  .grid-2{grid-template-columns:1.5fr 1fr;}
+  .grid-3{grid-template-columns:2fr 1fr 1fr;}
+  .controls-inline{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+  }
+  .controls-inline > *{flex:1 1 auto;}
+  .controls-inline > .tight{flex:0 0 auto;}
+  .btn{
+    border-radius:999px;
+    border:1px solid var(--blue);
+    background:var(--blue);
+    color:#fff;
+    padding:7px 14px;
+    font-size:13px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn-secondary{
+    background:#fff;
+    color:var(--blue);
+  }
+  .btn-danger{
+    background:var(--danger);
+    border-color:var(--danger);
+  }
+  .btn:disabled{
+    opacity:.6;
+    cursor:default;
+  }
   .right{text-align:right;}
-  .total{font-size:18px; display:flex; align-items:center; gap:8px;}
-  .amount{font-weight:600;}
-  .pill{border:1px solid var(--line);padding:10px 12px;}
-  .flash{animation:flash 900ms ease;}
-  @keyframes flash{0%{background:var(--flash);} 100%{background:transparent;}}
-  @media (max-width:800px){ .row{grid-template-columns:1fr;} }
+  .stack{display:flex;flex-direction:column;gap:6px;}
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
+    font-size:13px;
+  }
+  th,td{
+    padding:6px 4px;
+    border-bottom:1px solid #eee;
+    vertical-align:top;
+  }
+  thead th{
+    border-bottom:1px solid #ddd;
+    font-weight:600;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    color:var(--muted);
+  }
+  tfoot th{
+    border-top:1px solid #ddd;
+    border-bottom:none;
+    font-weight:600;
+  }
+  .linkish{
+    border:none;
+    background:none;
+    color:var(--blue);
+    padding:0;
+    font-size:12px;
+    text-decoration:underline;
+    cursor:pointer;
+  }
+  .tiny{font-size:11px;}
+  .chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:4px;
+  }
+  .chip{
+    border-radius:999px;
+    padding:4px 9px;
+    background:#fff;
+    border:1px solid var(--border);
+    font-size:11px;
+    color:var(--muted);
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+  }
+  .chip strong{color:var(--text);font-weight:500;}
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    font-size:11px;
+    padding:3px 7px;
+    border-radius:999px;
+    background:#fff;
+    border:1px solid var(--border);
+    color:var(--muted);
+  }
+  .badge-dot{width:5px;height:5px;border-radius:999px;background:var(--blue);}
+  .results-summary{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:flex-end;
+    justify-content:space-between;
+  }
+  .results-main{
+    font-size:16px;
+    font-weight:600;
+  }
+  .results-sub{font-size:13px;color:var(--muted);}
+  .result-note{margin-top:6px;font-size:12px;color:var(--muted);}
+  .pill-soft{
+    background:var(--accent);
+    border-color:transparent;
+    color:var(--blue);
+  }
+  .inline-num{font-variant-numeric:tabular-nums;}
+  .header-eyebrow{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.12em;
+    color:var(--muted);
+    margin-bottom:3px;
+  }
+  #internalHeader{
+    background:#fff6e5;
+    border:1px solid #f0d39c;
+    padding:6px 8px;
+    border-radius:6px;
+    font-size:11px;
+    margin-bottom:10px;
+  }
+  #internalHeader strong{color:#8a5300;}
+  @media (max-width:700px){
+    .grid-2,.grid-3{grid-template-columns:1fr;}
+    .controls-inline{flex-direction:column;align-items:stretch;}
+    .controls-inline > .tight{align-self:flex-start;}
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header id="internalHeader">
+<main>
+  <div id="internalHeader">
+    <strong>Builder note:</strong> This version is wired for CSV-based national averages only (no live Kroger pricing).
+  </div>
+
+  <header style="margin-bottom:18px;">
+    <div class="header-eyebrow">Eatonomics tools</div>
     <h1>Recipe Cost Estimator</h1>
-    <p class="lede">Enter ingredients with normal kitchen units (cup, tablespoon, teaspoon, ounce, pound, stick, each, gram, kilogram, milliliter, liter, quart, pint, can). We’ll total the recipe and, if you like, show per-serving cost.</p>
+    <p class="tagline">
+      Enter a recipe and get a ballpark ingredient-by-ingredient cost, based on national-average grocery prices.
+      Adjust servings or swap ingredients to see how your total shifts.
+    </p>
   </header>
 
-  <section class="card" data-n="1">
-    <h2 class="sub"><strong>Enter your ingredients below</strong></h2>
-    <div class="row" aria-label="ingredient entry">
+  <section class="card" aria-label="recipe basics">
+    <div class="card-header">
+      <div class="card-title">1. Describe your recipe</div>
+      <span class="pill"><span class="pill-dot"></span>Step 1 of 3</span>
+    </div>
+    <div class="grid grid-2">
       <div>
-        <label for="ing">Ingredient (type to search)</label>
-        <input id="ing" list="ingList" placeholder="e.g., flour, butter, chicken breast">
-        <datalist id="ingList"></datalist>
+        <label for="recipeName">Recipe name (optional)</label>
+        <input id="recipeName" type="text" placeholder="E.g., Weeknight baked ziti">
       </div>
       <div>
-        <label for="qty">Quantity</label>
-        <input id="qty" placeholder="e.g., 1/2, 1.5, 2 or 2 × 28">
+        <label for="servingsInput">How many servings does this recipe make?</label>
+        <input id="servingsInput" type="number" min="1" step="1" value="4">
+        <div class="muted tiny">We’ll use this to show an approximate per-serving cost.</div>
       </div>
-      <div>
-        <label for="unit">Unit (type to filter)</label>
-        <input id="unit" list="unitList" placeholder="can, cup, dozen, each, gram, gallon, kilogram, liter, pound, milliliter, ounce, pint, quart, stick, tablespoon, teaspoon">
-        <datalist id="unitList"></datalist>
+    </div>
+  </section>
+
+  <section class="card" aria-label="ingredients and quantities">
+    <div class="card-header">
+      <div class="card-title">2. Add your ingredients</div>
+      <span class="pill"><span class="pill-dot"></span>Step 2 of 3</span>
+    </div>
+
+    <div class="stack">
+      <div class="chips" id="chips"></div>
+
+      <div class="controls-inline">
+        <div>
+          <label for="ingInput">Ingredient</label>
+          <input id="ingInput" list="ingList" type="text" placeholder="E.g., All-purpose flour">
+          <datalist id="ingList"></datalist>
+        </div>
+        <div style="max-width:120px;">
+          <label for="qtyInput">Qty</label>
+          <input id="qtyInput" type="number" min="0" step="0.01" placeholder="1">
+        </div>
+        <div style="max-width:160px;">
+          <label for="unitInput">Unit</label>
+          <input id="unitInput" list="unitList" type="text" placeholder="cup, tbsp, oz, lb, each">
+          <datalist id="unitList"></datalist>
+        </div>
+        <div class="tight" style="margin-top:18px;">
+          <button class="btn" id="addBtn">Add ingredient</button>
+        </div>
       </div>
-      <div><button class="btn" id="addBtn">Add ingredient</button></div>
     </div>
 
     <table aria-label="recipe items">
@@ -103,408 +287,289 @@
     </table>
 
     <div class="controls-inline" style="margin-top:10px;">
-      <button class="linkish tiny" id="resetAll">Reset all</button>
+      <button class="btn-secondary btn tiny" id="resetAll">Reset all</button>
     </div>
-    <div class="stacked-tips muted tiny">
-      <span>Fractions like “1/2” or “1 1/2” are accepted.</span>
-      <span>Select “each” when counting whole ingredients (e.g., 3 eggs, 5 onions).</span>
-      <span>For cans, enter quantity like <strong>2 × 28 oz</strong> with unit <strong>can</strong> (defaults to <strong>1 × 15 oz</strong> if size is omitted). The “×” can be typed as “x”.</span>
-    </div>
-  </section>
-
-  <section class="card" data-n="2">
-    <h2 class="sub"><strong>Optional</strong> — Want to know your per-serving cost? Enter how many servings this recipe makes.</h2>
-    <div style="max-width:240px">
-      <label for="servings">Servings (optional)</label>
-      <input id="servings" placeholder="e.g., 4">
+    <div class="stack" style="margin-top:10px;">
+      <div class="muted tiny">
+        National average ingredient costs are estimates and will not match your local store prices exactly.
+        You can override any ingredient if you know what you paid.
+      </div>
     </div>
   </section>
 
-  <section class="card" data-n="R">
-    <h2 class="sub"><strong>Results</strong></h2>
-    <div class="total" id="totalRow">
-      <span id="totalTxt">Total recipe cost: <span class="amount" id="totalVal">$0.00</span></span>
+  <section class="card" aria-label="estimated results">
+    <div class="card-header">
+      <div class="card-title">3. Estimated cost</div>
+      <span class="pill"><span class="pill-dot"></span>Step 3 of 3</span>
     </div>
-    <div class="pill" id="perServing" style="display:none;">Per-serving: $0.00</div>
 
-    <div class="muted" id="priceNote" style="margin-top:10px;">
-      Prices are based on national grocery data from a major U.S. retailer (Kroger). Actual costs may vary by store and region.
+    <div class="results-summary">
+      <div>
+        <div class="results-main">
+          Approximate recipe cost:
+          <span class="inline-num" id="totalVal">$0.00</span>
+        </div>
+        <div class="results-sub" id="perServing" style="display:none;"></div>
+        <div class="result-note">
+          Totals reflect rough national-average grocery prices and assume typical package sizes.
+        </div>
+      </div>
+      <div>
+        <span class="badge">
+          <span class="badge-dot"></span>
+          Estimates only – your store prices will vary.
+        </span>
+      </div>
     </div>
   </section>
-</div>
+</main>
 
 <script>
-window.SHOW_INTERNAL_HEADER = false;
+(async function(){
+  const tbody = document.getElementById("tbody");
+  const totalCell = document.getElementById("totalCell");
+  const totalVal = document.getElementById("totalVal");
+  const ingInput = document.getElementById("ingInput");
+  const qtyInput = document.getElementById("qtyInput");
+  const unitInput = document.getElementById("unitInput");
+  const servingsInput = document.getElementById("servingsInput");
+  const chipsEl = document.getElementById("chips");
+  const perServingEl = document.getElementById("perServing");
+  const ingList = document.getElementById("ingList");
+  const unitList = document.getElementById("unitList");
 
-/* Unit maps */
-const UNIT_LABELS = {
-  can:"can", cup:"cup", dozen:"dozen", each:"each",
-  g:"gram", kg:"kilogram", ml:"milliliter", l:"liter",
-  oz:"ounce", lb:"pound", pt:"pint", qt:"quart",
-  stick:"stick", tbsp:"tablespoon", tsp:"teaspoon",
-  gallon:"gallon", "fl oz":"fl oz"
-};
-const UNIT_ALIASES = {
-  "pound":"lb","pounds":"lb","lb":"lb","lbs":"lb",
-  "ounce":"oz","ounces":"oz","oz":"oz","fluid ounce":"fl oz","fl oz":"fl oz",
-  "tablespoon":"tbsp","tablespoons":"tbsp","tbsp":"tbsp","T":"tbsp",
-  "teaspoon":"tsp","teaspoons":"tsp","tsp":"tsp","t":"tsp",
-  "cup":"cup","cups":"cup",
-  "quart":"qt","quarts":"qt","qt":"qt",
-  "pint":"pt","pints":"pt","pt":"pt",
-  "gram":"g","grams":"g","g":"g",
-  "kilogram":"kg","kilograms":"kg","kg":"kg",
-  "milliliter":"ml","milliliters":"ml","ml":"ml",
-  "liter":"l","liters":"l","litre":"l","litres":"l","l":"l",
-  "dozen":"dozen",
-  "each":"each",
-  "stick":"stick","sticks":"stick",
-  "can":"can","cans":"can",
-  "gallon":"gallon","gallons":"gallon"
-};
-function normalizeUnit(s){
-  if(!s) return "";
-  const k = s.trim().toLowerCase();
-  return UNIT_ALIASES[k] || k;
-}
-const ALL_UNITS = ["can","cup","dozen","each","fl oz","g","gallon","kg","l","lb","ml","oz","pt","qt","stick","tbsp","tsp"].sort();
+  const UNIT_LABELS = {
+    "cup":"cup",
+    "cups":"cup",
+    "tbsp":"tbsp",
+    "tablespoon":"tbsp",
+    "tablespoons":"tbsp",
+    "tsp":"tsp",
+    "teaspoon":"tsp",
+    "teaspoons":"tsp",
+    "oz":"oz",
+    "ounce":"oz",
+    "ounces":"oz",
+    "lb":"lb",
+    "pound":"lb",
+    "pounds":"lb",
+    "g":"g",
+    "gram":"g",
+    "grams":"g",
+    "ml":"ml",
+    "milliliter":"ml",
+    "milliliters":"ml",
+    "l":"l",
+    "liter":"l",
+    "liters":"l",
+    "each":"each",
+    "ea":"each",
+    "ct":"each"
+  };
 
-/* Baseline ingredient data */
-const DATA = {
-  "flour": {label:"Flour (all-purpose)", baseUnit:"lb", pricePerBase:0.60, packSize:5, packUnit:"lb", conversions:{cup:0.25,tbsp:0.015625,tsp:0.0052083,oz:1/16,lb:1}},
-  "sugar": {label:"Sugar (granulated)", baseUnit:"lb", pricePerBase:0.80, packSize:4, packUnit:"lb", conversions:{cup:0.50,tbsp:0.03125,tsp:0.0104167,oz:1/16,lb:1}},
-  "brown sugar": {label:"Brown sugar (packed)", baseUnit:"lb", pricePerBase:1.10, packSize:2, packUnit:"lb", conversions:{cup:0.44,tbsp:0.0275,tsp:0.0091667,oz:1/16,lb:1}},
-  "baking powder": {label:"Baking powder", baseUnit:"oz", pricePerBase:0.20, packSize:8, packUnit:"oz", conversions:{tsp:0.1667,tbsp:0.5,oz:1}},
-  "baking soda": {label:"Baking soda", baseUnit:"oz", pricePerBase:0.10, packSize:8, packUnit:"oz", conversions:{tsp:0.1667,tbsp:0.5,oz:1}},
-  "cocoa powder": {label:"Cocoa powder", baseUnit:"oz", pricePerBase:0.35, packSize:8, packUnit:"oz", conversions:{tbsp:0.125,tsp:0.04167,oz:1}},
-  "yeast": {label:"Yeast (dry active)", baseUnit:"oz", pricePerBase:1.20, packSize:4, packUnit:"oz", conversions:{tsp:0.111,tbsp:0.333,oz:1}},
+  const ALL_UNITS = [
+    "cup","tbsp","tsp","oz","lb","g","ml","l","each"
+  ];
 
-  "butter": {label:"Butter", baseUnit:"stick", pricePerBase:1.00, packSize:4, packUnit:"stick", conversions:{stick:1,tbsp:1/8,tsp:1/24,cup:0.5,oz:0.25,lb:0.25}},
-  "milk": {label:"Milk (whole)", baseUnit:"gallon", pricePerBase:3.50, packSize:1, packUnit:"gallon", conversions:{cup:1/16,tbsp:1/256,tsp:1/768,gallon:1,qt:1/4,pt:1/8,ml:1/3785.41,l:1/3.78541}},
-  "eggs": {label:"Eggs", baseUnit:"dozen", pricePerBase:2.50, packSize:12, packUnit:"each", conversions:{each:1/12,dozen:1}},
-  "cheddar": {label:"Cheddar cheese (shredded)", baseUnit:"oz", pricePerBase:0.28, packSize:8, packUnit:"oz", cupOz:4.0, conversions:{cup:4.0,oz:1,lb:16}},
-  "mozzarella": {label:"Mozzarella (shredded)", baseUnit:"oz", pricePerBase:0.30, packSize:8, packUnit:"oz", cupOz:4.0, conversions:{cup:4.0,oz:1,lb:16}},
-  "parmesan": {label:"Parmesan (grated)", baseUnit:"oz", pricePerBase:0.80, packSize:8, packUnit:"oz", cupOz:3.0, conversions:{tbsp:0.5,oz:1,cup:3.0}},
-
-  "olive oil": {label:"Olive oil", baseUnit:"tbsp", pricePerBase:0.10, packSize:16, packUnit:"fl oz", conversions:{tbsp:1,tsp:1/3,cup:16,ml:0.067628}},
-  "vegetable oil": {label:"Vegetable oil", baseUnit:"tbsp", pricePerBase:0.05, packSize:48, packUnit:"fl oz", conversions:{tbsp:1,tsp:1/3,cup:16,ml:0.067628}},
-  "mayonnaise": {label:"Mayonnaise", baseUnit:"tbsp", pricePerBase:0.12, packSize:30, packUnit:"oz", conversions:{tbsp:1,tsp:1/3,cup:16}},
-  "ketchup": {label:"Ketchup", baseUnit:"tbsp", pricePerBase:0.04, packSize:38, packUnit:"oz", conversions:{tbsp:1,tsp:1/3,cup:16}},
-
-  "rice": {label:"Rice (dry)", baseUnit:"lb", pricePerBase:1.20, packSize:2, packUnit:"lb", conversions:{cup:0.45,lb:1,oz:1/16,g:1/453.592,kg:2.20462}},
-  "pasta": {label:"Pasta (dry)", baseUnit:"lb", pricePerBase:1.10, packSize:1, packUnit:"lb", conversions:{cup:0.25,lb:1,oz:1/16}},
-  "quinoa": {label:"Quinoa (dry)", baseUnit:"lb", pricePerBase:3.50, packSize:1, packUnit:"lb", conversions:{cup:0.35,lb:1,oz:1/16}},
-  "oats": {label:"Oats (rolled)", baseUnit:"lb", pricePerBase:1.20, packSize:2, packUnit:"lb", conversions:{cup:0.30,lb:1,oz:1/16}},
-  "bread": {label:"Bread (sandwich loaf)", baseUnit:"each", pricePerBase:2.50, packSize:1, packUnit:"each", conversions:{each:1}},
-
-  "onion": {label:"Onion (medium)", baseUnit:"lb", pricePerBase:1.20, packSize:1, packUnit:"lb", conversions:{each:0.33,lb:1,oz:1/16,cup:0.33,g:1/453.592}},
-  "carrots": {label:"Carrots", baseUnit:"lb", pricePerBase:1.00, packSize:1, packUnit:"lb", conversions:{each:0.125,lb:1,oz:1/16,cup:0.30}},
-  "potato": {label:"Potato (russet)", baseUnit:"lb", pricePerBase:0.90, packSize:5, packUnit:"lb", conversions:{each:0.33,lb:1,oz:1/16}},
-  "tomato": {label:"Tomato", baseUnit:"lb", pricePerBase:1.49, packSize:1, packUnit:"lb", conversions:{each:0.33,lb:1,oz:1/16,cup:0.35}},
-  "garlic": {label:"Garlic", baseUnit:"oz", pricePerBase:0.40, packSize:3, packUnit:"oz", conversions:{clove:0.17,tsp:0.167,oz:1}},
-  "bell pepper": {label:"Bell pepper (medium)", baseUnit:"each", pricePerBase:0.90, packSize:3, packUnit:"each", conversions:{each:1,cup:0.5}},
-  "spinach": {label:"Spinach (fresh)", baseUnit:"lb", pricePerBase:3.50, packSize:1, packUnit:"lb", conversions:{cup:0.10,oz:1/16,lb:1}},
-  "lettuce": {label:"Lettuce (romaine)", baseUnit:"each", pricePerBase:1.99, packSize:1, packUnit:"each", conversions:{each:1,cup:0.1}},
-
-  "chicken breast": {label:"Chicken breast (boneless)", baseUnit:"lb", pricePerBase:3.29, packSize:1.5, packUnit:"lb", conversions:{lb:1,oz:1/16,g:1/453.592,kg:2.20462}},
-  "chicken thighs": {label:"Chicken thighs (bone-in)", baseUnit:"lb", pricePerBase:1.99, packSize:2.5, packUnit:"lb", conversions:{lb:1,oz:1/16}},
-  "ground beef": {label:"Ground beef (80/20)", baseUnit:"lb", pricePerBase:4.19, packSize:1, packUnit:"lb", conversions:{lb:1,oz:1/16,g:1/453.592,kg:2.20462}},
-  "pork chops": {label:"Pork chops", baseUnit:"lb", pricePerBase:3.29, packSize:1.5, packUnit:"lb", conversions:{lb:1,oz:1/16}},
-  "salmon": {label:"Salmon (fillet)", baseUnit:"lb", pricePerBase:8.99, packSize:1, packUnit:"lb", conversions:{lb:1,oz:1/16}},
-
-  "black beans": {label:"Black beans (canned)", baseUnit:"can", pricePerBase:1.00, packSize:1, packUnit:"can", conversions:{can:1}},
-  "chickpeas": {label:"Chickpeas / garbanzo (canned)", baseUnit:"can", pricePerBase:1.10, packSize:1, packUnit:"can", conversions:{can:1}},
-  "diced tomatoes": {label:"Tomatoes, diced (canned)", baseUnit:"can", pricePerBase:1.20, packSize:1, packUnit:"can", conversions:{can:1}},
-  "coconut milk": {label:"Coconut milk (canned)", baseUnit:"can", pricePerBase:2.00, packSize:1, packUnit:"can", conversions:{can:1}},
-
-  "yogurt": {label:"Yogurt (plain)", baseUnit:"cup", pricePerBase:0.80, packSize:4, packUnit:"cup", conversions:{cup:1,tbsp:1/16,ml:236.588}},
-  "tortillas": {label:"Tortillas (8-inch)", baseUnit:"each", pricePerBase:0.25, packSize:10, packUnit:"each", conversions:{each:1}},
-  "peanut butter": {label:"Peanut butter", baseUnit:"tbsp", pricePerBase:0.08, packSize:40, packUnit:"tbsp", conversions:{tbsp:1,tsp:1/3,cup:16}},
-  "salt": {label:"Salt", baseUnit:"oz", pricePerBase:0.05, packSize:16, packUnit:"oz", conversions:{tsp:0.2,tbsp:0.6,oz:1}},
-  "black pepper": {label:"Black pepper", baseUnit:"oz", pricePerBase:0.60, packSize:4, packUnit:"oz", conversions:{tsp:0.15,tbsp:0.45,oz:1}},
-  "coconut_shredded": {label:"Coconut (shredded)", baseUnit:"oz", pricePerBase:0.20, packSize:14, packUnit:"oz", cupOz:3.0, conversions:{cup:3.0,oz:1,lb:16}}
-};
-
-const ingInput = document.getElementById("ing");
-const unitInput = document.getElementById("unit");
-const qtyInput  = document.getElementById("qty");
-const servingsInput = document.getElementById("servings");
-const ingList  = document.getElementById("ingList");
-const unitList = document.getElementById("unitList");
-const tbody = document.getElementById("tbody");
-const totalCell = document.getElementById("totalCell");
-const totalRow = document.getElementById("totalRow");
-const totalVal = document.getElementById("totalVal");
-const perServingEl = document.getElementById("perServing");
-
-let rows = [];
-
-/* Helpers */
-function seedIng(){
-  ingList.innerHTML = "";
-  Object.keys(DATA).sort().forEach(k=>{
-    const item = DATA[k];
-    if(!item) return;
-    const o = document.createElement("option");
-    o.value = item.label || k;
-    o.label = item.label || k;
-    o.dataset.key = k;
-    ingList.appendChild(o);
-  });
-}
-
-function seedUnits(){
-  unitList.innerHTML="";
-  ALL_UNITS.forEach(u=>{
-    const o=document.createElement("option");
-    o.value = u;
-    o.label = UNIT_LABELS[u] || u;
-    unitList.appendChild(o);
-  });
-}
-
-function parseQuantity(str){
-  if(!str) return NaN;
-  str=(""+str).trim().toLowerCase();
-  const x=str.match(/^(\d+(?:\.\d+)?)\s*(?:x|×)\s*(\d+(?:\.\d+)?)$/i);
-  if(x) return {type:"x", n:Number(x[1]), m:Number(x[2])};
-  if(/\d+\s+\d+\/\d+/.test(str)){
-    const [w,f]=str.split(/\s+/);
-    const [n,d]=f.split("/").map(Number);
-    return Number(w)+n/d;
-  }
-  if(/^\d+\/\d+$/.test(str)){
-    const [n,d]=str.split("/").map(Number);
-    return n/d;
-  }
-  const v=Number(str);
-  return isFinite(v)?v:NaN;
-}
-
-function fmt(n){ return "$"+(isFinite(n)? n.toFixed(2):"0.00"); }
-
-function formatQty(q, unit){
-  const n = (q>=1) ? Math.round(q*100)/100 : Math.round(q*1000)/1000;
-  return `${n} ${UNIT_LABELS[unit]||unit}`;
-}
-
-/* Unit conversion logic */
-function toBaseFactor(item, unitRaw, qtyRaw){
-  const unit = normalizeUnit(unitRaw);
-  const base = normalizeUnit(item.baseUnit || "");
-  const conv = item.conversions || {};
-
-  // Special handling for "2x28 oz" style cans
-  if(unit === "can"){
-    let cans = 1;
-    let ozPerCan = 15;
-    const q = parseQuantity(qtyRaw);
-    if(typeof q === "object" && q.type === "x"){ cans = q.n; ozPerCan = q.m; }
-    else if(isFinite(q)){ cans = q; }
-    const displayQty = `${cans} × ${ozPerCan} oz`;
-    const displayUnit = `can (oz)`;
-    if(base === "lb"){ return { factor: (cans * ozPerCan) / 16, qtyDisplay: displayQty, unitDisplay: displayUnit }; }
-    if(base === "oz"){ return { factor: (cans * ozPerCan),       qtyDisplay: displayQty, unitDisplay: displayUnit }; }
+  function normalizeUnit(u){
+    if(!u) return "";
+    return (u||"").toString().trim().toLowerCase();
   }
 
-  if(conv[unit] != null){
-    return {
-      factor: conv[unit],
-      qtyDisplay: qtyRaw,
-      unitDisplay: UNIT_LABELS[unit] || unit
+  function fmt(n){
+    if(!isFinite(n)) return "$0.00";
+    return "$" + n.toFixed(2);
+  }
+
+  const DATA = {};
+  let rows = [];
+
+  function seedIng(){
+    ingList.innerHTML = "";
+    Object.keys(DATA).sort().forEach(k=>{
+      const item = DATA[k];
+      if(!item) return;
+      const o = document.createElement("option");
+      o.value = item.label || k;
+      o.label = item.label || k;
+      o.dataset.key = k;
+      ingList.appendChild(o);
+    });
+  }
+
+  function seedUnits(){
+    unitList.innerHTML="";
+    ALL_UNITS.forEach(u=>{
+      const o=document.createElement("option");
+      o.value = u;
+      o.label = u;
+      unitList.appendChild(o);
+    });
+  }
+
+  function addChip(text){
+    const span=document.createElement("span");
+    span.className="chip";
+    span.innerHTML=`<strong>${text}</strong>`;
+    chipsEl.appendChild(span);
+  }
+
+  addChip("Use national-average ingredient costs");
+  addChip("Override any ingredient if you know your store price");
+
+  function convertBetweenUnits(value, fromUnit, toUnit, item){
+    fromUnit = normalizeUnit(fromUnit);
+    toUnit   = normalizeUnit(toUnit);
+    if(!isFinite(value)) return null;
+    const v = Number(value);
+
+    if(fromUnit===toUnit) return v;
+
+    const density = item && item.cupOz ? item.cupOz : null;
+
+    function cupsToBase(cups){
+      if(toUnit==="oz" && density){
+        return cups * density;
+      }
+      if(toUnit==="lb" && density){
+        return (cups * density)/16;
+      }
+      if(toUnit==="g" && density){
+        return cups * density * 28.3495;
+      }
+      if(toUnit==="ml"){
+        return cups * 240;
+      }
+      return null;
+    }
+
+    function baseToCups(val){
+      if(fromUnit==="oz" && density){
+        return val / density;
+      }
+      if(fromUnit==="lb" && density){
+        return (val*16)/density;
+      }
+      if(fromUnit==="g" && density){
+        return val / (density*28.3495);
+      }
+      if(fromUnit==="ml"){
+        return val/240;
+      }
+      return null;
+    }
+
+    if(fromUnit==="cup" && density){
+      const base = cupsToBase(v);
+      return base;
+    }
+    if(toUnit==="cup" && density){
+      const cups = baseToCups(v);
+      return cups;
+    }
+
+    const toOz = u=>{
+      if(u==="oz") return 1;
+      if(u==="lb") return 16;
+      if(u==="g")  return 1/28.3495;
+      if(u==="ml") return 1/29.5735;
+      if(u==="l")  return 33.814;
+      if(u==="cup")return 8;
+      if(u==="tbsp")return 0.5;
+      if(u==="tsp") return 1/6;
+      return null;
     };
-  }
 
-  const weightUnits = { lb:1, oz:1, g:1, kg:1 };
-  const volumeUnits = { cup:1, tbsp:1, tsp:1, "fl oz":1, ml:1, l:1 };
-
-  function genericFactor(u){
-    if(!u) return null;
-    u = normalizeUnit(u);
-
-    if(u === base) return 1;
-
-    // Using cupOz for volume -> weight
-    if(item.cupOz && weightUnits[base] && volumeUnits[u]){
-      let cups = null;
-      if(u === "cup") cups = 1;
-      else if(u === "tbsp") cups = 1/16;
-      else if(u === "tsp") cups = 1/48;
-      else if(u === "fl oz") cups = 1/8;
-      else if(u === "ml") cups = 1/240;
-      else if(u === "l") cups = 1000/240;
-
-      if(cups != null){
-        const oz = cups * item.cupOz;
-        if(base === "oz") return oz;
-        if(base === "lb") return oz / 16;
-        if(base === "g")  return oz * 28.3495;
-        if(base === "kg") return (oz * 28.3495) / 1000;
-      }
+    const fromFactor=toOz(fromUnit);
+    const toFactor  =toOz(toUnit);
+    if(fromFactor && toFactor){
+      const ozVal=v*fromFactor;
+      return ozVal/toFactor;
     }
 
-    // Generic weight conversions
-    if(weightUnits[base] && weightUnits[u]){
-      let lbsFromU = null;
-      if(u === "lb") lbsFromU = 1;
-      else if(u === "oz") lbsFromU = 1/16;
-      else if(u === "g") lbsFromU = 1/453.592;
-      else if(u === "kg") lbsFromU = 2.20462;
-
-      if(lbsFromU != null){
-        if(base === "lb") return lbsFromU;
-        if(base === "oz") return lbsFromU * 16;
-        if(base === "g")  return lbsFromU * 453.592;
-        if(base === "kg") return lbsFromU / 2.20462;
-      }
+    if(fromUnit==="each" && toUnit!=="each"){
+      return null;
+    }
+    if(toUnit==="each" && fromUnit!=="each"){
+      return null;
     }
 
-    // Generic volume conversions
-    if(volumeUnits[base] && volumeUnits[u]){
-      let cups = null;
-      if(u === "cup") cups = 1;
-      else if(u === "tbsp") cups = 1/16;
-      else if(u === "tsp") cups = 1/48;
-      else if(u === "fl oz") cups = 1/8;
-      else if(u === "ml") cups = 1/240;
-      else if(u === "l") cups = 1000/240;
-
-      if(cups != null){
-        if(base === "cup")   return cups;
-        if(base === "tbsp")  return cups * 16;
-        if(base === "tsp")   return cups * 48;
-        if(base === "fl oz") return cups * 8;
-        if(base === "ml")    return cups * 240;
-        if(base === "l")     return (cups * 240) / 1000;
-      }
-    }
-
-    // Fallback: approximate volume -> weight if no cupOz
-    if(!item.cupOz && weightUnits[base] && volumeUnits[u]){
-      const assumedOzPerCup = 8;
-      let cups = null;
-      if(u === "cup") cups = 1;
-      else if(u === "tbsp") cups = 1/16;
-      else if(u === "tsp") cups = 1/48;
-      else if(u === "fl oz") cups = 1/8;
-      else if(u === "ml") cups = 1/240;
-      else if(u === "l") cups = 1000/240;
-
-      if(cups != null){
-        const oz = cups * assumedOzPerCup;
-        if(base === "oz") return oz;
-        if(base === "lb") return oz / 16;
-        if(base === "g")  return oz * 28.3495;
-        if(base === "kg") return (oz * 28.3495) / 1000;
-      }
-    }
-
-    // Gallon helpers
-    if(base === "gallon"){
-      if(u === "ml")   return 1/3785.41;
-      if(u === "l")    return 1/3.78541;
-      if(u === "qt")   return 1/4;
-      if(u === "pt")   return 1/8;
-      if(u === "cup")  return 1/16;
-      if(u === "tbsp") return 1/256;
-      if(u === "tsp")  return 1/768;
-      if(u === "fl oz")return 1/128;
+    if(fromUnit==="each" && toUnit==="each"){
+      return v;
     }
 
     return null;
   }
 
-  const factor = genericFactor(unit);
-  if(factor != null){
-    return {
-      factor,
-      qtyDisplay: qtyRaw,
-      unitDisplay: UNIT_LABELS[unit] || unit
-    };
+  function resolveQtyUnit(item, qtyRaw, unitRaw){
+    const qty = Number(qtyRaw);
+    if(!isFinite(qty) || qty<=0){
+      return {qtyDisplay:"", unitDisplay:"", baseQty:0};
+    }
+    const unitDisplay = UNIT_LABELS[unitRaw] || unitRaw || "";
+    let baseQty = qty;
+
+    const baseUnit = item.baseUnit || "each";
+    if(unitRaw && baseUnit && unitRaw!==baseUnit){
+      const converted = convertBetweenUnits(qty, unitRaw, baseUnit, item);
+      if(converted && converted>0){
+        baseQty = converted;
+      }
+    }
+
+    return {qtyDisplay:qtyRaw, unitDisplay, baseQty};
   }
 
-  if(unit === base){
-    return {
-      factor: 1,
-      qtyDisplay: qtyRaw,
-      unitDisplay: UNIT_LABELS[unit] || unit
-    };
-  }
+  function render(){
+    tbody.innerHTML=""; let total=0;
 
-  return null;
-}
+    rows.forEach((r,i)=>{
+      const item = DATA[r.key];
+      let lineCost = 0;
 
-function convertBetweenUnits(qty, srcUnit, dstUnit, item){
-  srcUnit = normalizeUnit(srcUnit);
-  dstUnit = normalizeUnit(dstUnit);
-  if(srcUnit===dstUnit) return qty;
+      if(item){
+        let pricePerBase = item.pricePerBase || 0;
 
-  function factorToBase(u){
-    const conv=item.conversions||{};
-    if(u==="cup" && item.cupOz && (item.baseUnit==="oz" || item.baseUnit==="lb")){
-      if(item.baseUnit==="oz") return item.cupOz;
-      if(item.baseUnit==="lb") return item.cupOz/16;
-    }
-    if(conv[u]!=null) return conv[u];
-    if(item.baseUnit==="lb"){
-      if(u==="oz") return 1/16;
-      if(u==="g") return 1/453.592;
-      if(u==="kg") return 2.20462;
-    }
-    if(item.baseUnit==="gallon"){
-      if(u==="ml") return 1/3785.41;
-      if(u==="l") return 1/3.78541;
-      if(u==="qt") return 1/4;
-      if(u==="pt") return 1/8;
-      if(u==="cup") return 1/16;
-      if(u==="tbsp") return 1/256;
-      if(u==="tsp") return 1/768;
-      if(u==="fl oz")return 1/128;
-    }
-    if(u===item.baseUnit) return 1;
-    return null;
-  }
+        // If the user provided a cost for the full item, convert it to a per-base-unit cost
+        if (r.userItemCost != null && item.packSize && item.packUnit) {
+          const packInBase = convertBetweenUnits(item.packSize, item.packUnit, item.baseUnit, item);
+          if (packInBase && packInBase > 0) {
+            pricePerBase = Number(r.userItemCost) / packInBase;
+          }
+        }
 
-  const fSrc = factorToBase(srcUnit);
-  const fDst = factorToBase(dstUnit);
-  if(fSrc==null || fDst==null) return null;
-  return qty * fSrc / fDst;
-}
+        const incremental = r.baseQty * pricePerBase;
 
-/* Rendering */
-function render(){
-  tbody.innerHTML=""; let total=0;
-
-  rows.forEach((r,i)=>{
-    const item = DATA[r.key];
-    let lineCost = 0;
-
-    if(item){
-      const pricePerBase = item.pricePerBase || 0;
-      const incremental = r.baseQty * pricePerBase;
-
-      if(r.needBuy && item.packSize && item.packUnit){
-        const packInBase = convertBetweenUnits(item.packSize, item.packUnit, item.baseUnit, item);
-        if(packInBase && packInBase > 0){
-          const packs = Math.ceil(r.baseQty / packInBase);
-          const purchasedBaseQty = packs * packInBase;
-          lineCost = purchasedBaseQty * pricePerBase;
+        if(r.needBuy && item.packSize && item.packUnit){
+          const packInBase = convertBetweenUnits(item.packSize, item.packUnit, item.baseUnit, item);
+          if(packInBase && packInBase > 0){
+            const packs = Math.ceil(r.baseQty / packInBase);
+            const purchasedBaseQty = packs * packInBase;
+            lineCost = purchasedBaseQty * pricePerBase;
+          } else {
+            lineCost = incremental;
+          }
         } else {
           lineCost = incremental;
         }
-      } else {
-        lineCost = incremental;
       }
-    }
 
-    total += lineCost;
+      total += lineCost;
 
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
       <td>${r.label}</td>
       <td class="right">${r.qtyDisplay}</td>
       <td>${r.unitDisplay}</td>
-      <td class="right">${fmt(lineCost)}</td>
+      <td class="right">
+        ${fmt(lineCost)}
+        <div class="tiny muted">
+          <label>
+            Your item cost (optional)
+            <input type="number" min="0" step="0.01" class="customCost" data-i="${i}" value="${r.userItemCost != null ? r.userItemCost : ''}" title="Enter the cost of the full item you purchased, like a whole bell pepper or full bag of flour. We will calculate the portion cost for this recipe.">
+          </label>
+        </div>
+      </td>
       <td>
         <label class="tiny" style="display:flex;align-items:center;gap:4px;">
           <input type="checkbox" class="needBuyChk" data-i="${i}" ${r.needBuy ? "checked" : ""}>
@@ -512,164 +577,148 @@ function render(){
         </label>
       </td>
       <td><button class="linkish tiny" data-i="${i}">remove</button></td>`;
-    tbody.appendChild(tr);
-  });
-
-  // remove buttons
-  tbody.querySelectorAll("button[data-i]").forEach(b=>{
-    b.addEventListener("click",e=>{
-      rows.splice(Number(e.target.getAttribute("data-i")),1);
-      render();
+      tbody.appendChild(tr);
     });
-  });
 
-  // per-row "don't have" checkboxes
-  tbody.querySelectorAll(".needBuyChk").forEach(cb=>{
-    cb.addEventListener("change",e=>{
-      const idx = Number(e.target.getAttribute("data-i"));
-      if (!isNaN(idx) && rows[idx]){
-        rows[idx].needBuy = e.target.checked;
+    tbody.querySelectorAll("button[data-i]").forEach(b=>{
+      b.addEventListener("click",e=>{
+        rows.splice(Number(e.target.getAttribute("data-i")),1);
         render();
-      }
+      });
     });
-  });
 
-  totalCell.textContent = fmt(total);
-  totalVal.textContent = fmt(total);
-  const s=Number(servingsInput.value);
-  if(isFinite(s)&&s>0){
-    perServingEl.style.display="";
-    perServingEl.textContent=`Per-serving: ${fmt(total/s)}`;
-  } else {
-    perServingEl.style.display="none";
-  }
-
-  scheduleKrogerRefresh();
-}
-
-/* Add ingredient */
-document.getElementById("addBtn").addEventListener("click", ()=>{
-  const nameRaw = (ingInput.value || "").trim();
-  const qtyRaw  = (qtyInput.value  || "").trim();
-  const unitRaw = normalizeUnit(unitInput.value || "");
-  if(!nameRaw || !qtyRaw || !unitRaw) return;
-
-  const lower = nameRaw.toLowerCase();
-  let key = null;
-  let item = null;
-
-  // 1) Direct key match
-  if(DATA[lower]){
-    key = lower;
-    item = DATA[lower];
-  } else {
-    // 2) Exact label match
-    const hitLabel = Object.keys(DATA).find(k=>{
-      const it = DATA[k];
-      return (it.label || "").toLowerCase() === lower;
-    });
-    if(hitLabel){
-      key = hitLabel;
-      item = DATA[hitLabel];
-    } else {
-      // 3) Match via datalist option data-key
-      const opt = Array.from(ingList.options || []).find(o => o.value === nameRaw && o.dataset.key && DATA[o.dataset.key]);
-      if(opt){
-        key = opt.dataset.key;
-        item = DATA[key];
-      } else {
-        // 4) Loose fallback: substring
-        const hitLoose = Object.keys(DATA).find(k=>{
-          const it = DATA[k];
-          const lbl = (it.label || "").toLowerCase();
-          return k.includes(lower) || lbl.includes(lower);
-        });
-        if(hitLoose){
-          key = hitLoose;
-          item = DATA[hitLoose];
+    // per-row "don't have" checkboxes
+    tbody.querySelectorAll(".needBuyChk").forEach(cb=>{
+      cb.addEventListener("change",e=>{
+        const idx = Number(e.target.getAttribute("data-i"));
+        if (!isNaN(idx) && rows[idx]){
+          rows[idx].needBuy = e.target.checked;
+          render();
         }
+      });
+    });
+
+    // per-row custom item cost inputs
+    tbody.querySelectorAll(".customCost").forEach(inp=>{
+      inp.addEventListener("input", e=>{
+        const idx = Number(e.target.getAttribute("data-i"));
+        if (!isNaN(idx) && rows[idx]) {
+          const v = Number(e.target.value);
+          if (Number.isFinite(v) && v > 0) {
+            rows[idx].userItemCost = v;
+          } else {
+            rows[idx].userItemCost = null;
+          }
+          render();
+        }
+      });
+    });
+
+    totalCell.textContent = fmt(total);
+    totalVal.textContent = fmt(total);
+    const s=Number(servingsInput.value);
+    if(isFinite(s)&&s>0){
+      perServingEl.style.display="";
+      perServingEl.textContent=`Per-serving: ${fmt(total/s)}`;
+    } else {
+      perServingEl.style.display="none";
+    }
+  }
+
+  document.getElementById("addBtn").addEventListener("click", ()=>{
+    const nameRaw = (ingInput.value || "").trim();
+    const qtyRaw  = (qtyInput.value  || "").trim();
+    const unitRaw = normalizeUnit(unitInput.value || "");
+    if(!nameRaw || !qtyRaw || !unitRaw) return;
+
+    const lower = nameRaw.toLowerCase();
+    let key = null;
+    let item = null;
+
+    if(DATA[lower]){
+      key = lower;
+      item = DATA[lower];
+    } else {
+      const matchKey = Object.keys(DATA).find(k=>(DATA[k].label||k).toLowerCase()===lower);
+      if(matchKey){
+        key = matchKey;
+        item = DATA[matchKey];
       }
     }
-  }
 
-  if(!item){
-    alert("Ingredient not found in ingredient list.");
-    return;
-  }
+    if(!item){
+      key = lower;
+      item = DATA[key] = {
+        label: nameRaw,
+        baseUnit: unitRaw || "each",
+        pricePerBase: 0,
+        conversions:{}
+      };
+    }
 
-  const q = parseQuantity(qtyRaw);
-  let qtyNum;
-  if(typeof q === "object" && q.type === "x"){ qtyNum = q.n; }
-  else if(isFinite(q)){ qtyNum = q; }
-  else {
-    alert("Enter a valid quantity (e.g., 1/2, 1.5, 2, or 2x28).");
-    return;
-  }
+    const resolved = resolveQtyUnit(item, qtyRaw, unitRaw);
+    const baseQty = resolved.baseQty || 0;
+    if(baseQty<=0) return;
 
-  const resolved = toBaseFactor(item, unitRaw, qtyRaw);
-  if(!resolved){
-    alert(`Unit "${unitRaw}" is not available for ${item.label} yet.`);
-    return;
-  }
+    rows.push({
+      key,
+      label: item.label || nameRaw,
+      qtyDisplay: resolved.qtyDisplay || qtyRaw,
+      unitDisplay: resolved.unitDisplay || (UNIT_LABELS[unitRaw] || unitRaw),
+      baseQty,
+      needBuy: false,
+      userItemCost: null
+    });
 
-  const baseQty = (typeof q === "object" && q.type === "x")
-    ? resolved.factor
-    : qtyNum * resolved.factor;
-
-  rows.push({
-    key,
-    label: item.label || nameRaw,
-    qtyDisplay: resolved.qtyDisplay || qtyRaw,
-    unitDisplay: resolved.unitDisplay || (UNIT_LABELS[unitRaw] || unitRaw),
-    baseQty,
-    needBuy: false
+    ingInput.value = "";
+    qtyInput.value = "";
+    unitInput.value = "";
+    render();
   });
 
-  ingInput.value = "";
-  qtyInput.value = "";
-  unitInput.value = "";
-  render();
-});
+  document.getElementById("resetAll").addEventListener("click", ()=>{
+    rows = [];
+    render();
+  });
 
-/* Reset + servings */
-document.getElementById("resetAll").addEventListener("click", ()=>{
-  rows=[];
-  servingsInput.value="";
-  render();
-});
-servingsInput.addEventListener("input", render);
+  servingsInput.addEventListener("input", render);
 
-/* External ingredient merge (JSON + CSV) */
-async function tryMergeExternal(){
-  try{
-    const rj = await fetch("./data/ingredients.json", {cache:"no-store"});
-    if(rj.ok){
-      const extra = await rj.json();
-      Object.assign(DATA, extra);
-    }
-  }catch{}
-  try{
-    const rc = await fetch("./data/ingredients.csv", {cache:"no-store"});
-    if(!rc.ok) return;
-    const text = await rc.text();
-    const lines = text.split(/\r?\n/).filter(Boolean);
-    const hdr = lines.shift().split(",").map(s=>s.trim());
+  async function tryMergeExternal(){
+    try{
+      const rj = await fetch("./data/ingredients.json", {cache:"no-store"});
+      if(rj.ok){
+        const extra = await rj.json();
+        Object.assign(DATA, extra);
+      }
+    }catch{}
+    try{
+      const rc = await fetch("./data/ingredients.csv", {cache:"no-store"});
+      if(rc.ok){
+        const csv = await rc.text();
+        parseCsv(csv);
+      }
+    }catch{}
+  }
+
+  function parseCsv(csv){
+    const lines = csv.split(/\r?\n/).filter(l=>l.trim().length>0);
+    if(lines.length<2) return;
+    const headers = lines[0].split(",").map(h=>h.trim().toLowerCase());
     const idx = {
-      key:hdr.indexOf("key"),
-      label:hdr.indexOf("label"),
-      baseUnit:hdr.indexOf("baseUnit"),
-      pricePerBase:hdr.indexOf("pricePerBase"),
-      cupOz:hdr.indexOf("cupOz"),
-      packSize:hdr.indexOf("packSize"),
-      packUnit:hdr.indexOf("packUnit")
+      key: headers.indexOf("key"),
+      label: headers.indexOf("label"),
+      baseUnit: headers.indexOf("baseunit"),
+      pricePerBase: headers.indexOf("priceperbase"),
+      cupOz: headers.indexOf("cupoz"),
+      packSize: headers.indexOf("packsize"),
+      packUnit: headers.indexOf("packunit"),
     };
-    lines.forEach(line=>{
+    for(const line of lines.slice(1)){
       const parts = line.split(",");
-      if(parts.length < 4) return;
       const key = (parts[idx.key]||"").trim().toLowerCase();
-      if(!key) return;
+      if(!key) continue;
       const label = (parts[idx.label]||"").trim() || key;
-      const baseUnit = (parts[idx.baseUnit]||"").trim();
+      const baseUnit = (parts[idx.baseUnit]||"").trim() || "each";
       const pricePerBase = Number((parts[idx.pricePerBase]||"0").trim()) || 0;
       const cupOz = Number((parts[idx.cupOz]||"").trim()) || undefined;
       const packSize = Number((parts[idx.packSize]||"").trim()) || undefined;
@@ -680,86 +729,9 @@ async function tryMergeExternal(){
       DATA[key].pricePerBase = pricePerBase;
       if(cupOz){ DATA[key].cupOz = cupOz; }
       if(packSize && packUnit){ DATA[key].packSize = packSize; DATA[key].packUnit = packUnit; }
-    });
-  }catch{}
-}
-
-/* Kroger backend wiring: same endpoint + store, used only to refine pricePerBase */
-const KROGER_BACKEND = "https://tabella-kroger-backend.vercel.app";
-const KROGER_STORE_ID = "540FC222"; // Tampa, FL proxy store for national-average pricing
-
-let inKrogerUpdate = false;
-let krogerTimer = null;
-
-async function fetchKrogerPricesForAllRows(){
-  if (inKrogerUpdate) return;
-  if (!rows.length) return;
-
-  inKrogerUpdate = true;
-
-  const items = rows.map(r => ({
-    key: r.key,
-    name: r.label,
-    qty: r.baseQty || 0,
-    unit: DATA[r.key] && DATA[r.key].baseUnit ? DATA[r.key].baseUnit : ""
-  }));
-
-  try{
-    const res = await fetch(`${KROGER_BACKEND}/api/prices`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ storeId: KROGER_STORE_ID, items })
-    });
-
-    if (!res.ok) {
-      console.error("Kroger price lookup failed", res.status);
-      inKrogerUpdate = false;
-      return;
     }
-
-    const data = await res.json();
-    const raw = data && (data.pricing || data.items || data);
-    const priceItems = Array.isArray(raw) ? raw : [];
-
-    priceItems.forEach(pi => {
-      const key = pi.key || pi.ingredientKey || (pi.ingredient && pi.ingredient.key);
-      if (!key || !DATA[key]) return;
-      const item = DATA[key];
-
-      let ppb = null;
-      if (typeof pi.pricePerBase === "number" && isFinite(pi.pricePerBase)) {
-        ppb = pi.pricePerBase;
-      } else if (typeof pi.lineTotal === "number" && isFinite(pi.lineTotal)) {
-        const row = rows.find(r => r.key === key && r.baseQty > 0);
-        if (row) ppb = pi.lineTotal / row.baseQty;
-      }
-
-      if (ppb != null) {
-        item.pricePerBase = ppb;
-      }
-    });
-
-    render();
-  }catch(err){
-    console.error("Kroger price lookup error", err);
-  }finally{
-    inKrogerUpdate = false;
   }
-}
 
-function scheduleKrogerRefresh(){
-  if (inKrogerUpdate) return;
-  if (krogerTimer) clearTimeout(krogerTimer);
-  if (!rows.length) return;
-  krogerTimer = setTimeout(fetchKrogerPricesForAllRows, 800);
-}
-
-/* Init */
-(async function init(){
-  if(!window.SHOW_INTERNAL_HEADER){
-    const h=document.getElementById("internalHeader");
-    if(h) h.style.display="none";
-  }
   await tryMergeExternal();
   seedIng();
   seedUnits();
@@ -768,5 +740,4 @@ function scheduleKrogerRefresh(){
 </script>
 </body>
 </html>
-
 
