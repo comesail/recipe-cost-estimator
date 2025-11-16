@@ -1,1 +1,7 @@
-{}
+
+{
+  "all_purpose_flour": {
+    "krogerTerm": "Kroger All Purpose Enriched Flour 5 lb",
+    "baseUnit": "lb"
+  }
+}
