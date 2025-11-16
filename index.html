@@ -34,21 +34,22 @@
   input,button{ font:inherit;border-radius:0;border:1px solid var(--line);padding:10px 12px;width:100%;box-sizing:border-box;background:#fff;color:var(--text); }
   input[type="number"]{appearance:textfield;}
   input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{appearance:none;margin:0;}
+  input[type="checkbox"]{width:auto;padding:0;margin-right:4px;}
   .row{display:grid;grid-template-columns:2.5fr 1fr 1.2fr auto;gap:10px;align-items:end;}
   .row .btn{width:auto;padding:11px 16px;}
   .btn{background:var(--blue);color:#fff;border:1px solid var(--blue);cursor:pointer;font-weight:400;} .btn:hover{filter:brightness(.95);}
-  .btn.ghost{background:#fff;color:var(--blue);border-color:var(--blue);} .linkish{border:none;background:none;color:var(--blue);padding:0;cursor:pointer;text-decoration:underline;}
-  .controls-inline{display:flex;gap:12px;flex-wrap:wrap;align-items:center;} .stacked-tips{display:flex;flex-direction:column;gap:4px;margin-top:6px;}
-  table{width:100%;border-collapse:collapse;margin-top:12px;} th,td{border-bottom:1px solid var(--line);padding:10px 6px;text-align:left;font-weight:300;} th{color:#222;}
+  .linkish{border:none;background:none;color:var(--blue);padding:0;cursor:pointer;text-decoration:underline;}
+  .controls-inline{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+  .stacked-tips{display:flex;flex-direction:column;gap:4px;margin-top:6px;}
+  table{width:100%;border-collapse:collapse;margin-top:12px;}
+  th,td{border-bottom:1px solid var(--line);padding:10px 6px;text-align:left;font-weight:300;}
+  th{color:#222;}
   .right{text-align:right;}
-  .results-grid{display:grid; grid-template-columns: 1fr 320px; gap:24px; align-items:start;}
-  .results-right{border-left:1px solid var(--line); padding-left:18px;}
-  .pill-btn{ border-radius:999px; padding:10px 16px; border:2px solid var(--blue); background:#fff; color:var(--blue); font-weight:600; cursor:pointer; }
-  .pill-btn:hover{filter:brightness(.97);}
-  .total{font-size:18px; display:flex; align-items:center; gap:8px;} .amount{font-weight:600;} .badge{border:1px solid var(--line); padding:2px 6px; font-size:11px; color:#1f66c1;}
-  .pill{border:1px solid var(--line);padding:10px 12px;} .flash{animation:flash 900ms ease;} @keyframes flash{0%{background:var(--flash);} 100%{background:transparent;}}
-  .results-right .tiny{line-height:1.5;}
-  @media (max-width:900px){ .results-grid{grid-template-columns:1fr;} .results-right{border-left:none; padding-left:0;} }
+  .total{font-size:18px; display:flex; align-items:center; gap:8px;}
+  .amount{font-weight:600;}
+  .pill{border:1px solid var(--line);padding:10px 12px;}
+  .flash{animation:flash 900ms ease;}
+  @keyframes flash{0%{background:var(--flash);} 100%{background:transparent;}}
   @media (max-width:800px){ .row{grid-template-columns:1fr;} }
 </style>
 </head>
@@ -81,11 +82,23 @@
 
     <table aria-label="recipe items">
       <thead>
-        <tr><th>Ingredient</th><th class="right">Qty</th><th>Unit</th><th class="right">Line cost</th><th></th></tr>
+        <tr>
+          <th>Ingredient</th>
+          <th class="right">Qty</th>
+          <th>Unit</th>
+          <th class="right">Line cost</th>
+          <th>Don’t have on hand</th>
+          <th></th>
+        </tr>
       </thead>
       <tbody id="tbody"></tbody>
       <tfoot>
-        <tr><th colspan="3" class="right">Total</th><th class="right" id="totalCell">$0.00</th><th></th></tr>
+        <tr>
+          <th colspan="3" class="right">Total</th>
+          <th class="right" id="totalCell">$0.00</th>
+          <th></th>
+          <th></th>
+        </tr>
       </tfoot>
     </table>
 
@@ -108,32 +121,14 @@
   </section>
 
   <section class="card" data-n="R">
-    <div class="results-grid">
-      <div class="results-left">
-        <h2 class="sub"><strong>Results</strong></h2>
-        <div class="total" id="totalRow">
-          <span id="totalTxt">Total recipe cost: <span class="amount" id="totalVal">$0.00</span></span>
-          <span class="badge" id="regionBadge" style="display:none;">Regional</span>
-        </div>
-        <div class="pill" id="perServing" style="display:none;">Per-serving: $0.00</div>
+    <h2 class="sub"><strong>Results</strong></h2>
+    <div class="total" id="totalRow">
+      <span id="totalTxt">Total recipe cost: <span class="amount" id="totalVal">$0.00</span></span>
+    </div>
+    <div class="pill" id="perServing" style="display:none;">Per-serving: $0.00</div>
 
-        <div class="controls-inline" style="margin:10px 0 6px;">
-          <label class="tiny" style="margin:0;">
-            <input type="checkbox" id="buyToggle" style="width:auto;margin-right:6px;"> Show buy-from-scratch total (rounds up to pack sizes)
-          </label>
-        </div>
-        <div class="pill" id="buyTotal" style="display:none;">If buying from scratch: $0.00</div>
-        <div class="tiny muted" id="leftoversList" style="display:none; margin-top:6px;"></div>
-
-        <div class="muted" id="priceNote" style="margin-top:10px;">Prices use national grocery averages. Actual costs may vary by store and region.</div>
-      </div>
-
-      <div class="results-right">
-        <div class="tiny muted" style="margin-bottom:6px;">
-          Prices are based on Kroger national-average pricing from a representative Tampa, FL store. Location is not required.
-        </div>
-        <div class="muted tiny" id="regionNote" style="margin-top:8px;"></div>
-      </div>
+    <div class="muted" id="priceNote" style="margin-top:10px;">
+      Prices are based on national grocery data from a major U.S. retailer (Kroger). Actual costs may vary by store and region.
     </div>
   </section>
 </div>
@@ -141,6 +136,7 @@
 <script>
 window.SHOW_INTERNAL_HEADER = false;
 
+/* Unit maps */
 const UNIT_LABELS = {
   can:"can", cup:"cup", dozen:"dozen", each:"each",
   g:"gram", kg:"kilogram", ml:"milliliter", l:"liter",
@@ -173,6 +169,7 @@ function normalizeUnit(s){
 }
 const ALL_UNITS = ["can","cup","dozen","each","fl oz","g","gallon","kg","l","lb","ml","oz","pt","qt","stick","tbsp","tsp"].sort();
 
+/* Baseline ingredient data */
 const DATA = {
   "flour": {label:"Flour (all-purpose)", baseUnit:"lb", pricePerBase:0.60, packSize:5, packUnit:"lb", conversions:{cup:0.25,tbsp:0.015625,tsp:0.0052083,oz:1/16,lb:1}},
   "sugar": {label:"Sugar (granulated)", baseUnit:"lb", pricePerBase:0.80, packSize:4, packUnit:"lb", conversions:{cup:0.50,tbsp:0.03125,tsp:0.0104167,oz:1/16,lb:1}},
@@ -228,8 +225,6 @@ const DATA = {
   "coconut_shredded": {label:"Coconut (shredded)", baseUnit:"oz", pricePerBase:0.20, packSize:14, packUnit:"oz", cupOz:3.0, conversions:{cup:3.0,oz:1,lb:16}}
 };
 
-let REGION = { name:"National", factor:1.00 };
-
 const ingInput = document.getElementById("ing");
 const unitInput = document.getElementById("unit");
 const qtyInput  = document.getElementById("qty");
@@ -241,19 +236,15 @@ const totalCell = document.getElementById("totalCell");
 const totalRow = document.getElementById("totalRow");
 const totalVal = document.getElementById("totalVal");
 const perServingEl = document.getElementById("perServing");
-const priceNote = document.getElementById("priceNote");
-const regionNote = document.getElementById("regionNote");
-const regionBadge = document.getElementById("regionBadge");
-const buyToggle = document.getElementById("buyToggle");
-const buyTotalEl = document.getElementById("buyTotal");
-const leftoversList = document.getElementById("leftoversList");
 
+let rows = [];
+
+/* Helpers */
 function seedIng(){
   ingList.innerHTML = "";
   Object.keys(DATA).sort().forEach(k=>{
     const item = DATA[k];
     if(!item) return;
-
     const o = document.createElement("option");
     o.value = item.label || k;
     o.label = item.label || k;
@@ -290,75 +281,14 @@ function parseQuantity(str){
   return isFinite(v)?v:NaN;
 }
 
-let rows=[];
 function fmt(n){ return "$"+(isFinite(n)? n.toFixed(2):"0.00"); }
-
-function render(){
-  tbody.innerHTML=""; let total=0;
-  rows.forEach((r,i)=>{
-    total+=r.lineCost;
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
-      <td>${r.label}</td>
-      <td class="right">${r.qtyDisplay}</td>
-      <td>${r.unitDisplay}</td>
-      <td class="right">${fmt(r.lineCost)}</td>
-      <td><button class="linkish tiny" data-i="${i}">remove</button></td>`;
-    tbody.appendChild(tr);
-  });
-  tbody.querySelectorAll("[data-i]").forEach(b=>{
-    b.addEventListener("click",e=>{
-      rows.splice(Number(e.target.getAttribute("data-i")),1);
-      render();
-    });
-  });
-  totalCell.textContent = fmt(total);
-  totalVal.textContent = fmt(total);
-  const s=Number(servingsInput.value);
-  if(isFinite(s)&&s>0){
-    perServingEl.style.display="";
-    perServingEl.textContent=`Per-serving: ${fmt(total/s)}`;
-  } else {
-    perServingEl.style.display="none";
-  }
-
-  if(buyToggle.checked){
-    let buyTotal = 0;
-    let leftoversLines = [];
-    rows.forEach(r=>{
-      const item = DATA[r.key];
-      if(!item || item.packSize==null || !item.packUnit) return;
-      const packInBase = convertBetweenUnits(item.packSize, item.packUnit, item.baseUnit, item);
-      if(!packInBase || packInBase<=0) return;
-      const packs = Math.ceil(r.baseQty / packInBase);
-      const purchasedBaseQty = packs * packInBase;
-      const buyLineCost = purchasedBaseQty * item.pricePerBase * (REGION.factor||1);
-      buyTotal += buyLineCost;
-      const leftoverBase = purchasedBaseQty - r.baseQty;
-      if(leftoverBase > 1e-6){
-        leftoversLines.push(`${item.label}: leftover ~ ${formatQty(leftoverBase, item.baseUnit)}`);
-      }
-    });
-    buyTotalEl.style.display="";
-    buyTotalEl.textContent = `If buying from scratch: ${fmt(buyTotal)}`;
-    leftoversList.style.display = leftoversLines.length ? "" : "none";
-    leftoversList.innerHTML = leftoversLines.length
-      ? `<div><strong>Leftovers after purchase</strong></div><ul class="tiny" style="margin:6px 0 0 18px;">${leftoversLines.map(x=>`<li>${x}</li>`).join("")}</ul>`
-      : "";
-  }else{
-    buyTotalEl.style.display="none";
-    leftoversList.style.display="none";
-    leftoversList.innerHTML="";
-  }
-
-  scheduleKrogerRefresh();
-}
 
 function formatQty(q, unit){
   const n = (q>=1) ? Math.round(q*100)/100 : Math.round(q*1000)/1000;
   return `${n} ${UNIT_LABELS[unit]||unit}`;
 }
 
+/* Unit conversion logic */
 function toBaseFactor(item, unitRaw, qtyRaw){
   const unit = normalizeUnit(unitRaw);
   const base = normalizeUnit(item.baseUnit || "");
@@ -377,7 +307,6 @@ function toBaseFactor(item, unitRaw, qtyRaw){
     if(base === "oz"){ return { factor: (cans * ozPerCan),       qtyDisplay: displayQty, unitDisplay: displayUnit }; }
   }
 
-  // Direct conversion table
   if(conv[unit] != null){
     return {
       factor: conv[unit],
@@ -494,7 +423,6 @@ function toBaseFactor(item, unitRaw, qtyRaw){
     };
   }
 
-  // Final exact match
   if(unit === base){
     return {
       factor: 1,
@@ -531,7 +459,7 @@ function convertBetweenUnits(qty, srcUnit, dstUnit, item){
       if(u==="cup") return 1/16;
       if(u==="tbsp") return 1/256;
       if(u==="tsp") return 1/768;
-      if(u==="fl oz") return 1/128;
+      if(u==="fl oz")return 1/128;
     }
     if(u===item.baseUnit) return 1;
     return null;
@@ -543,6 +471,83 @@ function convertBetweenUnits(qty, srcUnit, dstUnit, item){
   return qty * fSrc / fDst;
 }
 
+/* Rendering */
+function render(){
+  tbody.innerHTML=""; let total=0;
+
+  rows.forEach((r,i)=>{
+    const item = DATA[r.key];
+    let lineCost = 0;
+
+    if(item){
+      const pricePerBase = item.pricePerBase || 0;
+      const incremental = r.baseQty * pricePerBase;
+
+      if(r.needBuy && item.packSize && item.packUnit){
+        const packInBase = convertBetweenUnits(item.packSize, item.packUnit, item.baseUnit, item);
+        if(packInBase && packInBase > 0){
+          const packs = Math.ceil(r.baseQty / packInBase);
+          const purchasedBaseQty = packs * packInBase;
+          lineCost = purchasedBaseQty * pricePerBase;
+        } else {
+          lineCost = incremental;
+        }
+      } else {
+        lineCost = incremental;
+      }
+    }
+
+    total += lineCost;
+
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${r.label}</td>
+      <td class="right">${r.qtyDisplay}</td>
+      <td>${r.unitDisplay}</td>
+      <td class="right">${fmt(lineCost)}</td>
+      <td>
+        <label class="tiny" style="display:flex;align-items:center;gap:4px;">
+          <input type="checkbox" class="needBuyChk" data-i="${i}" ${r.needBuy ? "checked" : ""}>
+          <span>Don’t have</span>
+        </label>
+      </td>
+      <td><button class="linkish tiny" data-i="${i}">remove</button></td>`;
+    tbody.appendChild(tr);
+  });
+
+  // remove buttons
+  tbody.querySelectorAll("button[data-i]").forEach(b=>{
+    b.addEventListener("click",e=>{
+      rows.splice(Number(e.target.getAttribute("data-i")),1);
+      render();
+    });
+  });
+
+  // per-row "don't have" checkboxes
+  tbody.querySelectorAll(".needBuyChk").forEach(cb=>{
+    cb.addEventListener("change",e=>{
+      const idx = Number(e.target.getAttribute("data-i"));
+      if (!isNaN(idx) && rows[idx]){
+        rows[idx].needBuy = e.target.checked;
+        render();
+      }
+    });
+  });
+
+  totalCell.textContent = fmt(total);
+  totalVal.textContent = fmt(total);
+  const s=Number(servingsInput.value);
+  if(isFinite(s)&&s>0){
+    perServingEl.style.display="";
+    perServingEl.textContent=`Per-serving: ${fmt(total/s)}`;
+  } else {
+    perServingEl.style.display="none";
+  }
+
+  scheduleKrogerRefresh();
+}
+
+/* Add ingredient */
 document.getElementById("addBtn").addEventListener("click", ()=>{
   const nameRaw = (ingInput.value || "").trim();
   const qtyRaw  = (qtyInput.value  || "").trim();
@@ -607,11 +612,9 @@ document.getElementById("addBtn").addEventListener("click", ()=>{
     return;
   }
 
-  const pricePerBase = item.pricePerBase * (REGION.factor || 1);
   const baseQty = (typeof q === "object" && q.type === "x")
     ? resolved.factor
     : qtyNum * resolved.factor;
-  const lineCost = baseQty * pricePerBase;
 
   rows.push({
     key,
@@ -619,7 +622,7 @@ document.getElementById("addBtn").addEventListener("click", ()=>{
     qtyDisplay: resolved.qtyDisplay || qtyRaw,
     unitDisplay: resolved.unitDisplay || (UNIT_LABELS[unitRaw] || unitRaw),
     baseQty,
-    lineCost
+    needBuy: false
   });
 
   ingInput.value = "";
@@ -628,15 +631,15 @@ document.getElementById("addBtn").addEventListener("click", ()=>{
   render();
 });
 
+/* Reset + servings */
 document.getElementById("resetAll").addEventListener("click", ()=>{
   rows=[];
   servingsInput.value="";
   render();
 });
 servingsInput.addEventListener("input", render);
-buyToggle.addEventListener("change", render);
 
-/* External ingredient merge: JSON + CSV */
+/* External ingredient merge (JSON + CSV) */
 async function tryMergeExternal(){
   try{
     const rj = await fetch("./data/ingredients.json", {cache:"no-store"});
@@ -681,31 +684,12 @@ async function tryMergeExternal(){
   }catch{}
 }
 
-/* Kroger backend wiring: fixed national proxy store */
+/* Kroger backend wiring: same endpoint + store, used only to refine pricePerBase */
 const KROGER_BACKEND = "https://tabella-kroger-backend.vercel.app";
 const KROGER_STORE_ID = "540FC222"; // Tampa, FL proxy store for national-average pricing
 
 let inKrogerUpdate = false;
 let krogerTimer = null;
-
-function applyKrogerNationalMode(){
-  REGION = { name: "Kroger", factor: 1.00 };
-  if (regionBadge) {
-    regionBadge.style.display = "inline-block";
-    regionBadge.textContent = "Kroger";
-  }
-  if (regionNote) {
-    regionNote.textContent = "Using Kroger national-average prices (Tampa, FL proxy store).";
-  }
-  if (priceNote) {
-    priceNote.textContent = "Prices use Kroger national-average prices from a representative Tampa, FL store. Actual costs may vary by store and region.";
-  }
-  if (totalRow) {
-    totalRow.classList.remove("flash");
-    void totalRow.offsetWidth;
-    totalRow.classList.add("flash");
-  }
-}
 
 async function fetchKrogerPricesForAllRows(){
   if (inKrogerUpdate) return;
@@ -717,7 +701,7 @@ async function fetchKrogerPricesForAllRows(){
     key: r.key,
     name: r.label,
     qty: r.baseQty || 0,
-    unit: r.unitDisplay || ""
+    unit: DATA[r.key] && DATA[r.key].baseUnit ? DATA[r.key].baseUnit : ""
   }));
 
   try{
@@ -739,30 +723,22 @@ async function fetchKrogerPricesForAllRows(){
 
     priceItems.forEach(pi => {
       const key = pi.key || pi.ingredientKey || (pi.ingredient && pi.ingredient.key);
-      const name = (pi.label || pi.name || (pi.ingredient && pi.ingredient.name) || "").toLowerCase();
+      if (!key || !DATA[key]) return;
+      const item = DATA[key];
 
-      let target = null;
-      if (key) {
-        target = rows.find(r => r.key === key);
+      let ppb = null;
+      if (typeof pi.pricePerBase === "number" && isFinite(pi.pricePerBase)) {
+        ppb = pi.pricePerBase;
+      } else if (typeof pi.lineTotal === "number" && isFinite(pi.lineTotal)) {
+        const row = rows.find(r => r.key === key && r.baseQty > 0);
+        if (row) ppb = pi.lineTotal / row.baseQty;
       }
-      if (!target && name) {
-        target = rows.find(r => r.label.toLowerCase() === name);
-      }
-      if (!target) return;
 
-      const lineTotal =
-        typeof pi.lineTotal === "number" ? pi.lineTotal :
-        typeof pi.totalPrice === "number" ? pi.totalPrice :
-        null;
-
-      if (lineTotal != null && isFinite(lineTotal)) {
-        target.lineCost = lineTotal;
-      } else if (typeof pi.pricePerBase === "number") {
-        target.lineCost = (target.baseQty || 0) * pi.pricePerBase;
+      if (ppb != null) {
+        item.pricePerBase = ppb;
       }
     });
 
-    applyKrogerNationalMode();
     render();
   }catch(err){
     console.error("Kroger price lookup error", err);
@@ -775,9 +751,10 @@ function scheduleKrogerRefresh(){
   if (inKrogerUpdate) return;
   if (krogerTimer) clearTimeout(krogerTimer);
   if (!rows.length) return;
-  krogerTimer = setTimeout(fetchKrogerPricesForAllRows, 700);
+  krogerTimer = setTimeout(fetchKrogerPricesForAllRows, 800);
 }
 
+/* Init */
 (async function init(){
   if(!window.SHOW_INTERNAL_HEADER){
     const h=document.getElementById("internalHeader");
@@ -791,4 +768,5 @@ function scheduleKrogerRefresh(){
 </script>
 </body>
 </html>
+
 
